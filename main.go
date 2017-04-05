@@ -4,9 +4,9 @@ import (
 	"log"
 	"os"
 
-	"gitlab.com/gitlab-org/es-git-go/elastic"
-	"gitlab.com/gitlab-org/es-git-go/git"
-	"gitlab.com/gitlab-org/es-git-go/indexer"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
 )
 
 func main() {

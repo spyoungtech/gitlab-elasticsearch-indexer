@@ -1,7 +1,8 @@
 # GitLab Elasticsearch Indexer
 
 This project indexes Git repositories into Elasticsearch for GitLab. See the
-[homepage](https://gitlab.com/gitlab-org/es-git-go) for more information.
+[homepage](https://gitlab.com/gitlab-org/gitlab-elasticsearch-indexer) for more
+information.
 
 ## Building
 

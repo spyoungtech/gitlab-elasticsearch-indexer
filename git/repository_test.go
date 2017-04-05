@@ -10,7 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/gitlab-org/es-git-go/git"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
 )
 
 var (

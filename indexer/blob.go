@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"gitlab.com/gitlab-org/es-git-go/git"
-	"gitlab.com/gitlab-org/es-git-go/linguist"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/linguist"
 )
 
 var (

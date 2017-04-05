@@ -3,7 +3,7 @@ package indexer
 import (
 	"time"
 
-	"gitlab.com/gitlab-org/es-git-go/git"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
 )
 
 const (

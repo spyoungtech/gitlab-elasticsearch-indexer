@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/gitlab-org/es-git-go/linguist"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/linguist"
 )
 
 func TestCommonLanguagesAreDetectedByExtension(t *testing.T) {

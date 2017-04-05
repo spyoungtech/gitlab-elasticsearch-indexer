@@ -1,0 +1,22 @@
+.test: &test
+  services:
+    - elasticsearch:5.1
+  variables:
+    V: "1"
+    ELASTIC_CONNECTION_INFO: '{"url":["http://elasticsearch:9200"]}'
+  stage: test
+  script:
+    - apt-get update && apt-get -yy install libicu-dev
+    - make setup
+    - make format
+    - make cover
+    - make
+    - make test
+
+test 1.7:
+  <<: *test
+  image: golang:1.7
+
+test 1.8:
+  <<: *test
+  image: golang:1.8

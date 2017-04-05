@@ -6,7 +6,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/gitlab-org/es-git-go/indexer"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
 )
 
 func TestBuildBlob(t *testing.T) {

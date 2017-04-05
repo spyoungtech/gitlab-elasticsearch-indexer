@@ -11,12 +11,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/gitlab-org/es-git-go/elastic"
-	"gitlab.com/gitlab-org/es-git-go/indexer"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
 )
 
 var (
-	binary   = flag.String("binary", "./bin/es-git-go", "Path to `es-git-go` binary for integration tests")
+	binary   = flag.String("binary", "./bin/gitlab-elasticsearch-indexer", "Path to `gitlab-elasticsearch-indexer` binary for integration tests")
 	testRepo = flag.String("test-repo", "./tmp/gitlab-test.git", "Path to `gitlab-test` repository for integration tests")
 )
 

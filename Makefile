@@ -1,9 +1,11 @@
 # The import path is where your repository can be found.
 # To import subpackages, always prepend the full import path.
 # If you change this, run `make clean`. Read more: https://git.io/vM7zV
-IMPORT_PATH := gitlab.com/gitlab-org/es-git-go
+IMPORT_PATH := gitlab.com/gitlab-org/gitlab-elasticsearch-indexer
 
 GO15VENDOREXPERIMENT := 1
+
+PREFIX ?= /usr/local
 
 # V := 1 # When V is set, print commands and build progress.
 
@@ -16,6 +18,10 @@ all: build
 .PHONY: build
 build: .GOPATH/.ok
 	$Q go install $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)
+
+install: build
+	install -d ${PREFIX}/bin
+	install -m755 bin/gitlab-elasticsearch-indexer ${PREFIX}/bin
 
 ### Code not in the repository root? Another binary? Add to the path like this.
 # .PHONY: otherbin

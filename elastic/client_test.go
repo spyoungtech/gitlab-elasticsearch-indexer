@@ -13,7 +13,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"gitlab.com/gitlab-org/es-git-go/elastic"
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
 )
 
 const (

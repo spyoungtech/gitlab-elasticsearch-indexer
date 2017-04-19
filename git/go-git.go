@@ -32,12 +32,9 @@ func NewGoGitRepository(projectPath string, fromSHA string, toSHA string) (*goGi
 		return nil, err
 	}
 	out.Repository = repo
+	out.FromHash = plumbing.NewHash(fromSHA)
 
-	if fromSHA == "" {
-		out.FromHash = plumbing.ZeroHash
-	} else {
-		out.FromHash = plumbing.NewHash(fromSHA)
-
+	if !out.FromHash.IsZero() {
 		commit, err := repo.CommitObject(out.FromHash)
 		if err != nil {
 			return nil, fmt.Errorf("Bad from SHA (%s): %s", out.FromHash, err)

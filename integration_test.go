@@ -67,9 +67,12 @@ func run(from, to string) error {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	if from != "" {
-		cmd.Env = append(cmd.Env, "FROM_SHA="+from)
+	// GitLab always sets FROM_SHA
+	if from == "" {
+		from = "0000000000000000000000000000000000000000"
 	}
+
+	cmd.Env = append(cmd.Env, "FROM_SHA="+from)
 
 	if to != "" {
 		cmd.Env = append(cmd.Env, "TO_SHA="+to)

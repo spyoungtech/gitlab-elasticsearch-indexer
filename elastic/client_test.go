@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
@@ -19,6 +20,83 @@ import (
 const (
 	projectID = "667"
 )
+
+const credsRespTmpl = `{
+  "Code": "Success",
+  "Type": "AWS-HMAC",
+  "AccessKeyId" : "accessKey",
+  "SecretAccessKey" : "secret",
+  "Token" : "token",
+  "Expiration" : "%s",
+  "LastUpdated" : "2009-11-23T0:00:00Z"
+}`
+
+const credsFailRespTmpl = `{
+  "Code": "ErrorCode",
+  "Message": "ErrorMsg",
+  "LastUpdated": "2009-11-23T0:00:00Z"
+}`
+
+func initTestServer(expireOn string, failAssume bool) *httptest.Server {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/latest/meta-data/iam/security-credentials":
+			fmt.Fprintln(w, "RoleName")
+		case "/latest/meta-data/iam/security-credentials/RoleName":
+			if failAssume {
+				fmt.Fprintf(w, credsFailRespTmpl)
+			} else {
+				fmt.Fprintf(w, credsRespTmpl, expireOn)
+			}
+		default:
+			http.Error(w, "bad request", http.StatusBadRequest)
+		}
+	}))
+
+	return server
+}
+
+func TestResolveAWSCredentialsStatic(t *testing.T) {
+	aws_config := &aws.Config{}
+	config, err := elastic.ReadConfig(strings.NewReader(
+		`{
+			"url":["http://localhost:9200"],
+			"aws":true,
+			"aws_access_key": "static_access_key",
+			"aws_secret_access_key": "static_secret_access_key"
+		}`,
+	))
+
+	creds := elastic.ResolveAWSCredentials(config, aws_config)
+	credsValue, err := creds.Get()
+	assert.Nil(t, err, "Expect no error, %v", err)
+	assert.Equal(t, "static_access_key", credsValue.AccessKeyID, "Expect access key ID to match")
+	assert.Equal(t, "static_secret_access_key", credsValue.SecretAccessKey, "Expect secret access key to match")
+}
+
+func TestResolveAWSCredentialsEc2RoleProfile(t *testing.T) {
+	server := initTestServer("2014-12-16T01:51:37Z", false)
+	defer server.Close()
+
+	aws_config := &aws.Config{
+		Endpoint: aws.String(server.URL + "/latest"),
+	}
+
+	config, err := elastic.ReadConfig(strings.NewReader(
+		`{
+			"url":["` + server.URL + `"],
+			"aws":true,
+			"aws_region":"us-east-1",
+			"aws_profile":"test_aws_will_not_find"
+		}`,
+	))
+
+	creds := elastic.ResolveAWSCredentials(config, aws_config)
+	credsValue, err := creds.Get()
+	assert.Nil(t, err, "Expect no error, %v", err)
+	assert.Equal(t, "accessKey", credsValue.AccessKeyID, "Expect access key ID to match")
+	assert.Equal(t, "secret", credsValue.SecretAccessKey, "Expect secret access key to match")
+}
 
 func TestAWSConfiguration(t *testing.T) {
 	var req *http.Request

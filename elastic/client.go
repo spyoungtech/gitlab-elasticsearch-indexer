@@ -7,7 +7,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go/aws/ec2metadata"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/deoxxa/aws_signing_client"
 	"gopkg.in/olivere/elastic.v5"
@@ -59,7 +63,10 @@ func NewClient(config *Config) (*Client, error) {
 
 	// AWS settings have to come first or they override custom URL, etc
 	if config.AWS {
-		credentials := credentials.NewStaticCredentials(config.AccessKey, config.SecretKey, "")
+		aws_config := &aws.Config{
+			Region: aws.String(config.Region),
+		}
+		credentials := ResolveAWSCredentials(config, aws_config)
 		signer := v4.NewSigner(credentials)
 		awsClient, err := aws_signing_client.New(signer, &http.Client{}, "es", config.Region)
 		if err != nil {
@@ -99,6 +106,29 @@ func NewClient(config *Config) (*Client, error) {
 		Client:    client,
 		bulk:      bulk,
 	}, nil
+}
+
+// ResolveAWSCredentials returns Credentials object
+//
+// Order of resolution
+// 1.  Static Credentials - As configured in Indexer config
+// 2.  EC2 Instance Role Credentials
+func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.Credentials {
+	sess := session.Must(session.NewSession(aws_config))
+	creds := credentials.NewChainCredentials(
+		[]credentials.Provider{
+			&credentials.StaticProvider{
+				Value: credentials.Value{
+					AccessKeyID:     config.AccessKey,
+					SecretAccessKey: config.SecretKey,
+				},
+			},
+			&ec2rolecreds.EC2RoleProvider{
+				Client: ec2metadata.New(sess),
+			},
+		},
+	)
+	return creds
 }
 
 func (c *Client) ParentID() string {

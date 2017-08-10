@@ -64,5 +64,11 @@ func encodeBytes(b []byte) (string, error) {
 		}
 	}
 
-	return "", fmt.Errorf("Failed to convert from %s to UTF-8", matches[0].Charset)
+	// `detector.GuessCharset` may return err == nil && len(matches) == 0
+	bestGuess := "unknown"
+	if len(matches) > 0 {
+		bestGuess = matches[0].Charset
+	}
+
+	return "", fmt.Errorf("Failed to convert from %s to UTF-8", bestGuess)
 }

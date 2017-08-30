@@ -22,3 +22,7 @@ ensure the development packages for your platform are installed before running
 $ brew install icu4c
 $ export PKG_CONFIG_PATH="/usr/local/opt/icu4c/lib/pkgconfig:$PKG_CONFIG_PATH"
 ```
+
+## Contributing
+
+Please see the [contribution guidelines](CONTRIBUTING.md)

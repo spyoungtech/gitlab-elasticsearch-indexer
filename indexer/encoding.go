@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/lupine/icu"
+	"gitlab.com/lupine/icu"
 )
 
 var (

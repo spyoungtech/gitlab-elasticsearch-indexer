@@ -18,16 +18,18 @@ var indexMapping = `
 					"preserve_original": "1",
 					"patterns": [
 						"(\\p{Ll}+|\\p{Lu}\\p{Ll}+|\\p{Lu}+)",
-						"(\\d+)"
+						"(\\d+)",
+						"(?=([\\p{Lu}]+[\\p{L}]+))",
+						"\"((?:\\\"|[^\"]|\\\")*)\"",
+						"'((?:\\'|[^']|\\')*)'",
+						"\\.([^.]+)(?=\\.|\\s|\\Z)",
+						"\\/?([^\\/]+)(?=\\/|\\b)"
 					]
-				}
-			},
-			"char_filter": {
-				"code_mapping": {
-					"type": "mapping",
-					"mappings": [
-						". => ' '"
-					]
+				},
+				"edgeNGram_filter": {
+					"type": "edgeNGram",
+					"min_gram": "2",
+					"max_gram": "40"
 				}
 			},
 			"analyzer": {
@@ -44,11 +46,8 @@ var indexMapping = `
 						"lowercase",
 						"asciifolding"
 					],
-					"char_filter": [
-						"code_mapping"
-					],
 					"type": "custom",
-					"tokenizer": "standard"
+					"tokenizer": "whitespace"
 				},
 				"path_analyzer": {
 					"filter": [
@@ -70,13 +69,11 @@ var indexMapping = `
 					"filter": [
 						"code",
 						"lowercase",
-						"asciifolding"
-					],
-					"char_filter": [
-						"code_mapping"
+						"asciifolding",
+						"edgeNGram_filter"
 					],
 					"type": "custom",
-					"tokenizer": "standard"
+					"tokenizer": "whitespace"
 				},
 				"my_ngram_analyzer": {
 					"filter": [

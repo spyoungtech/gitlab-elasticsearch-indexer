@@ -1,5 +1,11 @@
 # GitLab Elasticsearch Indexer
 
+## v0.2.2
+- Update CONTRIBUTING.md and LICENSE.md !10
+- Use a GitLab fork of icu
+- Update the built-in schema to match gitlab !14
+- Make installation instructions clearer !15
+
 ## v0.2.1
 - Fix a runtime panic in encoding (!7)
 

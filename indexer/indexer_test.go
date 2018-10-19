@@ -182,19 +182,22 @@ func TestIndex(t *testing.T) {
 	repo.modified = append(repo.modified, gitModified)
 	repo.removed = append(repo.removed, gitRemoved)
 
+	join_data_blob := map[string]string{"name": "blob", "parent": "project_" + parentID}
+	join_data_commit := map[string]string{"name": "commit", "parent": "project_" + parentID}
+
 	idx.Index()
 
 	assert.Equal(t, submit.indexed, 3)
 	assert.Equal(t, submit.removed, 1)
 
 	assert.Equal(t, parentID+"_"+added.Path, submit.indexedID[0])
-	assert.Equal(t, map[string]interface{}{"blob": added}, submit.indexedThing[0])
+	assert.Equal(t, map[string]interface{}{"blob": added, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[0])
 
 	assert.Equal(t, parentID+"_"+modified.Path, submit.indexedID[1])
-	assert.Equal(t, map[string]interface{}{"blob": modified}, submit.indexedThing[1])
+	assert.Equal(t, map[string]interface{}{"blob": modified, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[1])
 
 	assert.Equal(t, parentID+"_"+commit.SHA, submit.indexedID[2])
-	assert.Equal(t, map[string]interface{}{"commit": commit}, submit.indexedThing[2])
+	assert.Equal(t, map[string]interface{}{"commit": commit, "join_field": join_data_commit, "type": "commit"}, submit.indexedThing[2])
 
 	assert.Equal(t, parentID+"_"+removed.Path, submit.removedID[0])
 

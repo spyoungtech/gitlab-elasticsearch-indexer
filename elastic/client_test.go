@@ -132,7 +132,7 @@ func TestAWSConfiguration(t *testing.T) {
 	defer client.Close()
 
 	if assert.NotNil(t, req) {
-		authRE := regexp.MustCompile(`\AAWS4-HMAC-SHA256 Credential=0/\d{8}/us-east-1/es/aws4_request, SignedHeaders=accept;date;host;x-amz-date, Signature=[a-f0-9]{64}\z`)
+		authRE := regexp.MustCompile(`\AAWS4-HMAC-SHA256 Credential=0/\d{8}/us-east-1/es/aws4_request, SignedHeaders=accept;content-type;date;host;x-amz-date, Signature=[a-f0-9]{64}\z`)
 		assert.Regexp(t, authRE, req.Header.Get("Authorization"))
 		assert.NotEqual(t, "", req.Header.Get("X-Amz-Date"))
 	}

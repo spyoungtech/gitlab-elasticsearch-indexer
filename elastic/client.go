@@ -14,7 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/deoxxa/aws_signing_client"
-	"gopkg.in/olivere/elastic.v5"
+	"github.com/olivere/elastic"
 )
 
 var (
@@ -146,8 +146,8 @@ func (c *Client) Close() {
 func (c *Client) Index(id string, thing interface{}) {
 	req := elastic.NewBulkIndexRequest().
 		Index(c.IndexName).
-		Type("repository").
-		Parent(c.ProjectID).
+		Type("doc").
+		Routing("project_" + c.ProjectID).
 		Id(id).
 		Doc(thing)
 
@@ -158,9 +158,9 @@ func (c *Client) Index(id string, thing interface{}) {
 func (c *Client) Get(id string) (*elastic.GetResult, error) {
 	return c.Client.Get().
 		Index(c.IndexName).
-		Type("repository").
+		Type("doc").
+		Routing("project_" + c.ProjectID).
 		Id(id).
-		Routing(c.ProjectID).
 		Do(context.TODO())
 }
 
@@ -175,8 +175,8 @@ func (c *Client) GetBlob(path string) (*elastic.GetResult, error) {
 func (c *Client) Remove(id string) {
 	req := elastic.NewBulkDeleteRequest().
 		Index(c.IndexName).
-		Type("repository").
-		Parent(c.ProjectID).
+		Type("doc").
+		Routing("project_" + c.ProjectID).
 		Id(id)
 
 	c.bulk.Add(req)

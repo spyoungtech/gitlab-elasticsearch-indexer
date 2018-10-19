@@ -2,11 +2,14 @@ package elastic
 
 import (
 	"context"
+	"strconv"
+	"strings"
 )
 
 var indexMapping = `
 {
 	"settings": {
+		"index.mapping.single_type": true,
 		"analysis": {
 			"filter": {
 				"my_stemmer": {
@@ -15,7 +18,7 @@ var indexMapping = `
 				},
 				"code": {
 					"type": "pattern_capture",
-					"preserve_original": "1",
+					"preserve_original": "true",
 					"patterns": [
 						"(\\p{Ll}+|\\p{Lu}\\p{Ll}+|\\p{Lu}+)",
 						"(\\d+)",
@@ -109,532 +112,251 @@ var indexMapping = `
 		}
 	},
 	"mappings": {
-		"milestone": {
-			"_parent": {
-				"type": "project"
-			},
+		"doc": {
 			"_routing": {
 				"required": true
 			},
-			"properties": {
-				"created_at": {
-					"type": "date"
-				},
-				"description": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"id": {
-					"type": "integer"
-				},
-				"project_id": {
-					"type": "integer"
-				},
-				"title": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"updated_at": {
-					"type": "date"
-				}
-			}
-		},
-		"note": {
-			"_parent": {
-				"type": "project"
-			},
-			"_routing": {
-				"required": true
-			},
-			"properties": {
-				"created_at": {
-					"type": "date"
-				},
-				"id": {
-					"type": "integer"
-				},
-				"issue": {
-					"properties": {
-						"assignee_id": {
-							"type": "integer"
-						},
-						"author_id": {
-							"type": "integer"
-						},
-						"confidential": {
-							"type": "boolean"
-						}
-					}
-				},
-				"note": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"noteable_id": {
-					"type": "integer"
-				},
-				"noteable_type": {
-					"type": "keyword"
-				},
-				"project_id": {
-					"type": "integer"
-				},
-				"updated_at": {
-					"type": "date"
-				}
-			}
-		},
-		"project_wiki": {
-			"_parent": {
-				"type": "project"
-			},
-			"_routing": {
-				"required": true
-			},
-			"properties": {
-				"blob": {
-					"properties": {
-						"commit_sha": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"content": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "code_analyzer",
-							"search_analyzer": "code_search_analyzer"
-						},
-						"file_name": {
-							"type": "text",
-							"analyzer": "code_analyzer",
-							"search_analyzer": "code_search_analyzer"
-						},
-						"id": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"language": {
-							"type": "keyword"
-						},
-						"oid": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"path": {
-							"type": "text",
-							"analyzer": "path_analyzer"
-						},
-						"rid": {
-							"type": "keyword"
-						}
-					}
-				},
-				"commit": {
-					"properties": {
-						"author": {
-							"properties": {
-								"email": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"name": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"time": {
-									"type": "date",
-									"format": "basic_date_time_no_millis"
-								}
-							}
-						},
-						"commiter": {
-							"properties": {
-								"email": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"name": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"time": {
-									"type": "date",
-									"format": "basic_date_time_no_millis"
-								}
-							}
-						},
-						"id": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"message": {
-							"type": "text",
-							"index_options": "offsets"
-						},
-						"rid": {
-							"type": "keyword"
-						},
-						"sha": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						}
-					}
-				}
-			}
-		},
-		"issue": {
-			"_parent": {
-				"type": "project"
-			},
-			"_routing": {
-				"required": true
-			},
-			"properties": {
-				"assignee_id": {
-					"type": "integer"
-				},
-				"author_id": {
-					"type": "integer"
-				},
-				"confidential": {
-					"type": "boolean"
-				},
-				"created_at": {
-					"type": "date"
-				},
-				"description": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"id": {
-					"type": "integer"
-				},
-				"iid": {
-					"type": "integer"
-				},
-				"project_id": {
-					"type": "integer"
-				},
-				"state": {
-					"type": "text"
-				},
-				"title": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"updated_at": {
-					"type": "date"
-				}
-			}
-		},
-		"merge_request": {
-			"_parent": {
-				"type": "project"
-			},
-			"_routing": {
-				"required": true
-			},
-			"properties": {
-				"author_id": {
-					"type": "integer"
-				},
-				"created_at": {
-					"type": "date"
-				},
-				"description": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"id": {
-					"type": "integer"
-				},
-				"iid": {
-					"type": "integer"
-				},
-				"merge_status": {
-					"type": "text"
-				},
-				"source_branch": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"source_project_id": {
-					"type": "integer"
-				},
-				"state": {
-					"type": "text"
-				},
-				"target_branch": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"target_project_id": {
-					"type": "integer"
-				},
-				"title": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"updated_at": {
-					"type": "date"
-				}
-			}
-		},
-		"repository": {
-			"_parent": {
-				"type": "project"
-			},
-			"_routing": {
-				"required": true
-			},
-			"properties": {
-				"blob": {
-					"properties": {
-						"commit_sha": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"content": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "code_analyzer",
-							"search_analyzer": "code_search_analyzer"
-						},
-						"file_name": {
-							"type": "text",
-							"analyzer": "code_analyzer",
-							"search_analyzer": "code_search_analyzer"
-						},
-						"id": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"language": {
-							"type": "keyword"
-						},
-						"oid": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"path": {
-							"type": "text",
-							"analyzer": "path_analyzer"
-						},
-						"rid": {
-							"type": "keyword"
-						},
-						"type": {
-							"type": "text",
-							"fields": {
-								"keyword": {
-									"type": "keyword",
-									"ignore_above": 256
-								}
-							}
-						}
-					}
-				},
-				"commit": {
-					"properties": {
-						"author": {
-							"properties": {
-								"email": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"name": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"time": {
-									"type": "date",
-									"format": "basic_date_time_no_millis"
-								}
-							}
-						},
-						"commiter": {
-							"properties": {
-								"email": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"name": {
-									"type": "text",
-									"index_options": "offsets"
-								},
-								"time": {
-									"type": "date",
-									"format": "basic_date_time_no_millis"
-								}
-							}
-						},
-						"committer": {
-							"properties": {
-								"email": {
-									"type": "text",
-									"fields": {
-										"keyword": {
-											"type": "keyword",
-											"ignore_above": 256
-										}
-									}
-								},
-								"name": {
-									"type": "text",
-									"fields": {
-										"keyword": {
-											"type": "keyword",
-											"ignore_above": 256
-										}
-									}
-								},
-								"time": {
-									"type": "text",
-									"fields": {
-										"keyword": {
-											"type": "keyword",
-											"ignore_above": 256
-										}
-									}
-								}
-							}
-						},
-						"id": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"message": {
-							"type": "text",
-							"index_options": "offsets"
-						},
-						"rid": {
-							"type": "keyword"
-						},
-						"sha": {
-							"type": "text",
-							"index_options": "offsets",
-							"analyzer": "sha_analyzer"
-						},
-						"type": {
-							"type": "text",
-							"fields": {
-								"keyword": {
-									"type": "keyword",
-									"ignore_above": 256
-								}
-							}
-						}
-					}
-				}
-			}
-		},
-		"project": {
 			"properties": {
 				"archived": {
-					"type": "boolean"
+						"type": "boolean"
 				},
-				"created_at": {
-					"type": "date"
+				"assignee_id": {
+						"type": "integer"
 				},
-				"description": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"id": {
-					"type": "integer"
-				},
-				"issues_access_level": {
-					"type": "integer"
-				},
-				"last_activity_at": {
-					"type": "date"
-				},
-				"last_pushed_at": {
-					"type": "date"
-				},
-				"merge_requests_access_level": {
-					"type": "integer"
-				},
-				"name": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"name_with_namespace": {
-					"type": "text",
-					"index_options": "offsets",
-					"analyzer": "my_ngram_analyzer"
-				},
-				"namespace_id": {
-					"type": "integer"
-				},
-				"path": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"path_with_namespace": {
-					"type": "text",
-					"index_options": "offsets"
-				},
-				"repository_access_level": {
-					"type": "integer"
-				},
-				"snippets_access_level": {
-					"type": "integer"
-				},
-				"updated_at": {
-					"type": "date"
-				},
-				"visibility_level": {
-					"type": "integer"
-				},
-				"wiki_access_level": {
-					"type": "integer"
-				}
-			}
-		},
-		"snippet": {
-			"properties": {
 				"author_id": {
-					"type": "integer"
+						"type": "integer"
+				},
+				"blob": {
+						"properties": {
+								"commit_sha": {
+										"analyzer": "sha_analyzer",
+										"index_options": "offsets",
+										"type": "text"
+								},
+								"content": {
+										"analyzer": "code_analyzer",
+										"index_options": "offsets",
+										"search_analyzer": "code_search_analyzer",
+										"type": "text"
+								},
+								"file_name": {
+										"analyzer": "code_analyzer",
+										"search_analyzer": "code_search_analyzer",
+										"type": "text"
+								},
+								"id": {
+										"analyzer": "sha_analyzer",
+										"index_options": "offsets",
+										"type": "text"
+								},
+								"language": {
+										"type": "keyword"
+								},
+								"oid": {
+										"analyzer": "sha_analyzer",
+										"index_options": "offsets",
+										"type": "text"
+								},
+								"path": {
+										"analyzer": "path_analyzer",
+										"type": "text"
+								},
+								"rid": {
+										"type": "keyword"
+								}
+						}
+				},
+				"commit": {
+						"properties": {
+								"author": {
+										"properties": {
+												"email": {
+														"index_options": "offsets",
+														"type": "text"
+												},
+												"name": {
+														"index_options": "offsets",
+														"type": "text"
+												},
+												"time": {
+														"format": "basic_date_time_no_millis",
+														"type": "date"
+												}
+										}
+								},
+								"commiter": {
+										"properties": {
+												"email": {
+														"index_options": "offsets",
+														"type": "text"
+												},
+												"name": {
+														"index_options": "offsets",
+														"type": "text"
+												},
+												"time": {
+														"format": "basic_date_time_no_millis",
+														"type": "date"
+												}
+										}
+								},
+								"id": {
+										"analyzer": "sha_analyzer",
+										"index_options": "offsets",
+										"type": "text"
+								},
+								"message": {
+										"index_options": "offsets",
+										"type": "text"
+								},
+								"rid": {
+										"type": "keyword"
+								},
+								"sha": {
+										"analyzer": "sha_analyzer",
+										"index_options": "offsets",
+										"type": "text"
+								}
+						}
+				},
+				"confidential": {
+						"type": "boolean"
 				},
 				"content": {
-					"type": "text",
-					"index_options": "offsets"
+						"index_options": "offsets",
+						"type": "text"
 				},
 				"created_at": {
-					"type": "date"
+						"type": "date"
+				},
+				"description": {
+						"index_options": "offsets",
+						"type": "text"
 				},
 				"file_name": {
-					"type": "text",
-					"index_options": "offsets"
+						"index_options": "offsets",
+						"type": "text"
 				},
 				"id": {
-					"type": "integer"
+						"type": "integer"
+				},
+				"iid": {
+						"type": "integer"
+				},
+				"issue": {
+						"properties": {
+								"assignee_id": {
+										"type": "integer"
+								},
+								"author_id": {
+										"type": "integer"
+								},
+								"confidential": {
+										"type": "boolean"
+								}
+						}
+				},
+				"issues_access_level": {
+						"type": "integer"
+				},
+				"join_field": {
+						"eager_global_ordinals": true,
+						"relations": {
+								"project": [
+										"note",
+										"blob",
+										"issue",
+										"milestone",
+										"wiki_blob",
+										"commit",
+										"merge_request"
+								]
+						},
+						"type": "join"
+				},
+				"last_activity_at": {
+						"type": "date"
+				},
+				"last_pushed_at": {
+						"type": "date"
+				},
+				"merge_requests_access_level": {
+						"type": "integer"
+				},
+				"merge_status": {
+						"type": "text"
+				},
+				"name": {
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"name_with_namespace": {
+						"analyzer": "my_ngram_analyzer",
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"namespace_id": {
+						"type": "integer"
+				},
+				"note": {
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"noteable_id": {
+						"type": "keyword"
+				},
+				"noteable_type": {
+						"type": "keyword"
+				},
+				"path": {
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"path_with_namespace": {
+						"index_options": "offsets",
+						"type": "text"
 				},
 				"project_id": {
-					"type": "integer"
+						"type": "integer"
+				},
+				"repository_access_level": {
+						"type": "integer"
+				},
+				"snippets_access_level": {
+						"type": "integer"
+				},
+				"source_branch": {
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"source_project_id": {
+						"type": "integer"
 				},
 				"state": {
-					"type": "text"
+						"type": "text"
+				},
+				"target_branch": {
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"target_project_id": {
+						"type": "integer"
 				},
 				"title": {
-					"type": "text",
-					"index_options": "offsets"
+						"index_options": "offsets",
+						"type": "text"
+				},
+				"type": {
+						"type": "keyword"
 				},
 				"updated_at": {
-					"type": "date"
+						"type": "date"
 				},
 				"visibility_level": {
-					"type": "integer"
+						"type": "integer"
+				},
+				"wiki_access_level": {
+						"type": "integer"
 				}
 			}
 		}
@@ -644,6 +366,23 @@ var indexMapping = `
 
 // CreateIndex creates an index matching that created by gitlab-elasticsearch-git v1.1.1
 func (c *Client) CreateIndex() error {
+	info, err := c.Client.NodesInfo().Do(context.Background())
+	if err != nil {
+		return err
+	}
+
+	for _, node := range info.Nodes {
+		// Grab the first character of the version string and turn it into an int
+		version, _ := strconv.Atoi(string(node.Version[0]))
+		if version >= 6 {
+			// single_type is an option only available on 5.6 that ES6 cannot handle
+			indexMapping = strings.Replace(indexMapping, "\"index.mapping.single_type\": true,", "", 1)
+		}
+
+		// We only look at the first node and assume they're all the same version
+		break
+	}
+
 	createIndex, err := c.Client.CreateIndex(c.IndexName).BodyString(indexMapping).Do(context.Background())
 	if err != nil {
 		return err

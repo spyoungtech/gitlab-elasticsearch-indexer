@@ -97,6 +97,13 @@ func TestIndexingRemovesFiles(t *testing.T) {
 	assert.Error(t, err)
 }
 
+type document struct {
+	Blob      *indexer.Blob     `json:"blob"`
+	Commit    *indexer.Commit   `json:"commit"`
+	Type      string            `json:"string"`
+	JoinField map[string]string `json:"join_field"`
+}
+
 // Go source is defined to be UTF-8 encoded, so literals here are UTF-8
 func TestIndexingTranscodesToUTF8(t *testing.T) {
 	checkDeps(t)
@@ -105,21 +112,21 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 
 	assert.NoError(t, run("", headSHA))
 
-	for _, tc := range []struct{
-			path string
-			expected string
-		} {
-			{"encoding/iso8859.txt", "狞\n"}, // GB18030
-			{"encoding/test.txt", "これはテストです。\nこれもマージして下さい。\n\nAdd excel file.\nDelete excel file."}, // SHIFT_JIS
-		} {
+	for _, tc := range []struct {
+		path     string
+		expected string
+	}{
+		{"encoding/iso8859.txt", "狞\n"},                                                         // GB18030
+		{"encoding/test.txt", "これはテストです。\nこれもマージして下さい。\n\nAdd excel file.\nDelete excel file."}, // SHIFT_JIS
+	} {
 
 		blob, err := c.GetBlob(tc.path)
 		assert.NoError(t, err)
 
-		blobDoc := make(map[string]*indexer.Blob)
+		blobDoc := &document{}
 		assert.NoError(t, json.Unmarshal(*blob.Source, &blobDoc))
 
-		assert.Equal(t, tc.expected, blobDoc["blob"].Content)
+		assert.Equal(t, tc.expected, blobDoc.Blob.Content)
 	}
 }
 
@@ -134,15 +141,14 @@ func TestIndexingGitlabTest(t *testing.T) {
 	commit, err := c.GetCommit(headSHA)
 	assert.NoError(t, err)
 	assert.True(t, commit.Found)
-	assert.Equal(t, "repository", commit.Type)
+	assert.Equal(t, "doc", commit.Type)
 	assert.Equal(t, projectID+"_"+headSHA, commit.Id)
-	assert.Equal(t, projectID, commit.Routing)
-	assert.Equal(t, projectID, commit.Parent)
+	assert.Equal(t, "project_"+projectID, commit.Routing)
 
-	doc := make(map[string]map[string]interface{})
-	assert.NoError(t, json.Unmarshal(*commit.Source, &doc))
+	data := make(map[string]interface{})
+	assert.NoError(t, json.Unmarshal(*commit.Source, &data))
 
-	commitDoc, ok := doc["commit"]
+	commitDoc, ok := data["commit"]
 	assert.True(t, ok)
 	assert.Equal(
 		t,
@@ -169,15 +175,14 @@ func TestIndexingGitlabTest(t *testing.T) {
 	blob, err := c.GetBlob("README.md")
 	assert.NoError(t, err)
 	assert.True(t, blob.Found)
-	assert.Equal(t, "repository", blob.Type)
+	assert.Equal(t, "doc", blob.Type)
 	assert.Equal(t, projectID+"_README.md", blob.Id)
-	assert.Equal(t, projectID, blob.Routing)
-	assert.Equal(t, projectID, blob.Parent)
+	assert.Equal(t, "project_"+projectID, blob.Routing)
 
-	doc = make(map[string]map[string]interface{})
-	assert.NoError(t, json.Unmarshal(*blob.Source, &doc))
+	data = make(map[string]interface{})
+	assert.NoError(t, json.Unmarshal(*blob.Source, &data))
 
-	blobDoc, ok := doc["blob"]
+	blobDoc, ok := data["blob"]
 	assert.True(t, ok)
 	assert.Equal(
 		t,
@@ -202,8 +207,8 @@ func TestIndexingGitlabTest(t *testing.T) {
 	commit, err = c.GetCommit("498214de67004b1da3d820901307bed2a68a8ef6")
 	assert.NoError(t, err)
 
-	cDoc := make(map[string]*indexer.Commit)
+	cDoc := &document{}
 	assert.NoError(t, json.Unmarshal(*commit.Source, &cDoc))
-	assert.Equal(t, "20160921T161326+0100", cDoc["commit"].Author.Time)
-	assert.Equal(t, "20160921T161326+0100", cDoc["commit"].Committer.Time)
+	assert.Equal(t, "20160921T161326+0100", cDoc.Commit.Author.Time)
+	assert.Equal(t, "20160921T161326+0100", cDoc.Commit.Committer.Time)
 }

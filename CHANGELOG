@@ -1,5 +1,9 @@
 # GitLab Elasticsearch Indexer
 
+## v0.3.0
+
+- Support Elasticsearch v5.6 and 6.0 !17
+
 ## v0.2.2
 - Update CONTRIBUTING.md and LICENSE.md !10
 - Use a GitLab fork of icu

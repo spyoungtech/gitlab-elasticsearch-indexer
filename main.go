@@ -40,4 +40,8 @@ func main() {
 	if err := idx.Index(); err != nil {
 		log.Fatalln("Indexing error: ", err)
 	}
+
+	if err := idx.Flush(); err != nil {
+		log.Fatalln("Flushing error: ", err)
+	}
 }

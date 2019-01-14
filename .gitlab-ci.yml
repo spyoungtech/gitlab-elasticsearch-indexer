@@ -21,34 +21,18 @@
   services:
     - elasticsearch:5.6
 
-test 1.7:
-  <<: *test-es6
-  image: golang:1.7
-
-test 1.8:
-  <<: *test-es6
-  image: golang:1.8
-
-test 1.9:
-  <<: *test-es6
-  image: golang:1.9
-
 test 1.10:
   <<: *test-es6
   image: golang:1.10
 
-test 1.7-es5.6:
-  <<: *test-es56
-  image: golang:1.7
-
-test 1.8-es5.6:
-  <<: *test-es56
-  image: golang:1.8
-
-test 1.9-es5.6:
-  <<: *test-es56
-  image: golang:1.9
-
 test 1.10-es5.6:
   <<: *test-es56
   image: golang:1.10
+
+test 1.11:
+  <<: *test-es6
+  image: golang:1.11
+
+test 1.11-es5.6:
+  <<: *test-es56
+  image: golang:1.11

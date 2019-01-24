@@ -15,8 +15,7 @@ var (
 )
 
 const (
-	binarySearchLimit = 8 * 1024    // 8 KiB, Same as git
-	maxBlobSize       = 1024 * 1024 // 1MiB, same as gitlab-elasticsearch-git
+	binarySearchLimit = 8 * 1024 // 8 KiB, Same as git
 )
 
 func isSkipBlobErr(err error) bool {
@@ -59,7 +58,7 @@ func GenerateBlobID(parentID, filename string) string {
 }
 
 func BuildBlob(file *git.File, parentID, commitSHA string) (*Blob, error) {
-	if file.Size > maxBlobSize {
+	if file.Size > git.LimitFileSize {
 		return nil, SkipTooLargeBlob
 	}
 

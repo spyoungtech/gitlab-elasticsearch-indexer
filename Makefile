@@ -87,10 +87,7 @@ setup: clean .GOPATH/.ok
 	go get -u github.com/FiloSottile/gvt
 	- ./bin/gvt fetch golang.org/x/tools/cmd/goimports
 	- ./bin/gvt fetch github.com/wadey/gocovmerge
-	- ./bin/gvt fetch github.com/stretchr/testify/assert
-	- mkdir tmp
-	- git clone --bare https://gitlab.com/gitlab-org/gitlab-test.git tmp/gitlab-test.git
-	- git -C tmp/gitlab-test.git update-ref refs/heads/master b83d6e391c22777fca1ed3012fce84f633d7fed0
+	- ./bin/gvt fetch github.com/stretchr/testify
 
 VERSION          := $(shell git describe --tags --always --dirty="-dev")
 DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')

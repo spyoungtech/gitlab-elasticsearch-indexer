@@ -1,6 +1,7 @@
 package main_test
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -10,40 +11,88 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
+	pb "gitlab.com/gitlab-org/gitaly-proto/go/gitalypb"
+	gitalyClient "gitlab.com/gitlab-org/gitaly/client"
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
 )
 
 var (
-	binary   = flag.String("binary", "./bin/gitlab-elasticsearch-indexer", "Path to `gitlab-elasticsearch-indexer` binary for integration tests")
-	testRepo = flag.String("test-repo", "./tmp/gitlab-test.git", "Path to `gitlab-test` repository for integration tests")
+	binary         = flag.String("binary", "./bin/gitlab-elasticsearch-indexer", "Path to `gitlab-elasticsearch-indexer` binary for integration tests")
+	gitalyConnInfo *gitalyConnectionInfo
 )
 
 const (
-	projectID = "667"
-	headSHA   = "b83d6e391c22777fca1ed3012fce84f633d7fed0"
+	projectID         = "667"
+	headSHA           = "b83d6e391c22777fca1ed3012fce84f633d7fed0"
+	testRepo          = "gitlab-org/gitlab-test.git"
+	testRepoPath      = "https://gitlab.com/gitlab-org/gitlab-test.git"
+	testRepoNamespace = "gitlab-org"
 )
+
+type gitalyConnectionInfo struct {
+	Address string `json:"address"`
+	Storage string `json:"storage"`
+}
+
+func init() {
+	gci, exists := os.LookupEnv("GITALY_CONNECTION_INFO")
+	if exists {
+		json.Unmarshal([]byte(gci), &gitalyConnInfo)
+	}
+}
+
+func ensureGitalyRepository(t *testing.T) error {
+	conn, err := gitalyClient.Dial(gitalyConnInfo.Address, gitalyClient.DefaultDialOpts)
+	if err != nil {
+		return fmt.Errorf("did not connect: %s", err)
+	}
+
+	namespace := pb.NewNamespaceServiceClient(conn)
+
+	repository := pb.NewRepositoryServiceClient(conn)
+
+	// Remove the repository if it already exists, for consistency
+	rmNsReq := &pb.RemoveNamespaceRequest{
+		StorageName: gitalyConnInfo.Storage,
+		Name:        testRepoNamespace,
+	}
+	_, err = namespace.RemoveNamespace(context.Background(), rmNsReq)
+	if err != nil {
+		return err
+	}
+
+	gl_repository := &pb.Repository{
+		StorageName:  gitalyConnInfo.Storage,
+		RelativePath: testRepo,
+	}
+
+	createReq := &pb.CreateRepositoryFromURLRequest{
+		Repository: gl_repository,
+		Url:        testRepoPath,
+	}
+
+	_, err = repository.CreateRepositoryFromURL(context.Background(), createReq)
+	return err
+}
 
 func checkDeps(t *testing.T) {
 	if os.Getenv("ELASTIC_CONNECTION_INFO") == "" {
-		t.Log("ELASTIC_CONNECTION_INFO not set")
-		t.Skip()
+		t.Skip("ELASTIC_CONNECTION_INFO not set")
+	}
+
+	if os.Getenv("GITALY_CONNECTION_INFO") == "" {
+		t.Skip("GITALY_CONNECTION_INFO is not set")
 	}
 
 	if testing.Short() {
-		t.Log("Test run with -short, skipping integration test")
-		t.Skip()
+		t.Skip("Test run with -short, skipping integration test")
 	}
 
 	if _, err := os.Stat(*binary); err != nil {
-		t.Log("No binary found at ", *binary)
-		t.Skip()
-	}
-
-	if _, err := os.Stat(*testRepo); err != nil {
-		t.Log("No test repo found at ", *testRepo)
-		t.Skip()
+		t.Skip("No binary found at ", *binary)
 	}
 }
 
@@ -62,7 +111,7 @@ func buildIndex(t *testing.T) (*elastic.Client, func()) {
 }
 
 func run(from, to string) error {
-	cmd := exec.Command(*binary, projectID, *testRepo)
+	cmd := exec.Command(*binary, projectID, testRepo)
 	cmd.Env = os.Environ()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -83,6 +132,7 @@ func run(from, to string) error {
 
 func TestIndexingRemovesFiles(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 	c, td := buildIndex(t)
 	defer td()
 
@@ -107,6 +157,7 @@ type document struct {
 // Go source is defined to be UTF-8 encoded, so literals here are UTF-8
 func TestIndexingTranscodesToUTF8(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 	c, td := buildIndex(t)
 	defer td()
 
@@ -132,6 +183,7 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 
 func TestIndexingGitlabTest(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 	c, td := buildIndex(t)
 	defer td()
 
@@ -150,6 +202,10 @@ func TestIndexingGitlabTest(t *testing.T) {
 
 	commitDoc, ok := data["commit"]
 	assert.True(t, ok)
+
+	date, err := time.Parse("20060102T150405-0700", "20160927T143746+0000")
+	assert.NoError(t, err)
+
 	assert.Equal(
 		t,
 		map[string]interface{}{
@@ -158,12 +214,12 @@ func TestIndexingGitlabTest(t *testing.T) {
 			"author": map[string]interface{}{
 				"email": "job@gitlab.com",
 				"name":  "Job van der Voort",
-				"time":  "20160927T143746+0000",
+				"time":  date.Local().Format("20060102T150405-0700"),
 			},
 			"committer": map[string]interface{}{
 				"email": "job@gitlab.com",
 				"name":  "Job van der Voort",
-				"time":  "20160927T143746+0000",
+				"time":  date.Local().Format("20060102T150405-0700"),
 			},
 			"rid":     projectID,
 			"message": "Merge branch 'branch-merged' into 'master'\r\n\r\nadds bar folder and branch-test text file to check Repository merged_to_root_ref method\r\n\r\n\r\n\r\nSee merge request !12",
@@ -209,6 +265,11 @@ func TestIndexingGitlabTest(t *testing.T) {
 
 	cDoc := &document{}
 	assert.NoError(t, json.Unmarshal(*commit.Source, &cDoc))
-	assert.Equal(t, "20160921T161326+0100", cDoc.Commit.Author.Time)
-	assert.Equal(t, "20160921T161326+0100", cDoc.Commit.Committer.Time)
+
+	date, err = time.Parse("20060102T150405-0700", "20160921T181326+0300")
+	assert.NoError(t, err)
+	expectedDate := date.Local().Format("20060102T150405-0700")
+
+	assert.Equal(t, expectedDate, cDoc.Commit.Author.Time)
+	assert.Equal(t, expectedDate, cDoc.Commit.Committer.Time)
 }

@@ -1,5 +1,9 @@
 # GitLab Elasticsearch Indexer
 
+## v1.0.0
+
+-  Use Gitaly to fetch repository data !13
+
 ## v0.3.0
 
 - Support Elasticsearch v5.6 and 6.0 !17

@@ -39,6 +39,39 @@ Example:
 PREFIX=/usr sudo -E make install
 ```
 
+## Run tests
+
+Test suite expects Gitaly and Elasticsearch to be run. You can run it with docker:
+
+```
+docker run -p 8075:8075 registry.gitlab.com/gitlab-org/build/cng/gitaly:latest
+```
+
+and Elasticsearch:
+
+```
+docker run -itd -p 9200:9200 elasticsearch:6.1
+```
+
+Before running tests, set configuration variables`
+
+```
+export GITALY_CONNECTION_INFO='{"address": "tcp://localhost:8075", "storage": "default"}'
+export ELASTIC_CONNECTION_INFO='{"url":["http://localhost:9200"]}'
+```
+
+to run some specific test, run
+
+```
+go test -v gitlab.com/gitlab-org/gitlab-elasticsearch-indexer -run TestIndexingGitlabTest
+```
+
+to run the whole test suite
+
+```
+make test
+```
+
 ## Contributing
 
 Please see the [contribution guidelines](CONTRIBUTING.md)

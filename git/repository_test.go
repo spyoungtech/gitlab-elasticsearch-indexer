@@ -1,7 +1,8 @@
 package git_test
 
 import (
-	"flag"
+	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"sort"
@@ -9,23 +10,87 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"golang.org/x/net/context"
 
+	pb "gitlab.com/gitlab-org/gitaly-proto/go/gitalypb"
+	gitalyClient "gitlab.com/gitlab-org/gitaly/client"
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
 )
 
 var (
-	testRepo = flag.String("test-repo", "../tmp/gitlab-test.git", "Path to `gitlab-test` repository for integration tests")
+	gitalyConnInfo *gitalyConnectionInfo
 )
 
 const (
-	initialSHA = "1a0b36b3cdad1d2ee32457c102a8c0b7056fa863"
-	headSHA    = "b83d6e391c22777fca1ed3012fce84f633d7fed0"
+	projectID         = "667"
+	headSHA           = "b83d6e391c22777fca1ed3012fce84f633d7fed0"
+	initialSHA        = "1a0b36b3cdad1d2ee32457c102a8c0b7056fa863"
+	testRepo          = "gitlab-org/gitlab-test.git"
+	testRepoPath      = "https://gitlab.com/gitlab-org/gitlab-test.git"
+	testRepoNamespace = "gitlab-org"
 )
 
+type gitalyConnectionInfo struct {
+	Address string `json:"address"`
+	Storage string `json:"storage"`
+}
+
+func init() {
+	gci, exists := os.LookupEnv("GITALY_CONNECTION_INFO")
+	if exists {
+		json.Unmarshal([]byte(gci), &gitalyConnInfo)
+	}
+}
+
+func ensureGitalyRepository(t *testing.T) error {
+	conn, err := gitalyClient.Dial(gitalyConnInfo.Address, gitalyClient.DefaultDialOpts)
+	if err != nil {
+		return fmt.Errorf("did not connect: %s", err)
+	}
+
+	namespace := pb.NewNamespaceServiceClient(conn)
+
+	repository := pb.NewRepositoryServiceClient(conn)
+
+	// Remove the repository if it already exists, for consistency
+	rmNsReq := &pb.RemoveNamespaceRequest{
+		StorageName: gitalyConnInfo.Storage,
+		Name:        testRepoNamespace,
+	}
+	_, err = namespace.RemoveNamespace(context.Background(), rmNsReq)
+	if err != nil {
+		return err
+	}
+
+	gl_repository := &pb.Repository{
+		StorageName:  gitalyConnInfo.Storage,
+		RelativePath: testRepo,
+	}
+
+	createReq := &pb.CreateRepositoryFromURLRequest{
+		Repository: gl_repository,
+		Url:        testRepoPath,
+	}
+
+	_, err = repository.CreateRepositoryFromURL(context.Background(), createReq)
+	if err != nil {
+		return err
+	}
+
+	writeHeadReq := &pb.WriteRefRequest{
+		Repository: gl_repository,
+		Ref:        []byte("refs/heads/master"),
+		Revision:   []byte("b83d6e391c22777fca1ed3012fce84f633d7fed0"),
+	}
+
+	_, err = repository.WriteRef(context.Background(), writeHeadReq)
+	return err
+}
+
 func checkDeps(t *testing.T) {
-	if _, err := os.Stat(*testRepo); err != nil {
-		t.Log("No test repo found at ", *testRepo)
-		t.SkipNow()
+	if os.Getenv("GITALY_CONNECTION_INFO") == "" {
+		t.Skip("GITALY_CONNECTION_INFO is not set")
 	}
 }
 
@@ -44,8 +109,9 @@ func runEachCommit(repo git.Repository) (map[string]*git.Commit, []string, error
 
 func TestEachCommit(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "", headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "", headSHA)
 	assert.NoError(t, err)
 
 	commits, commitHashes, err := runEachCommit(repo)
@@ -100,13 +166,13 @@ func TestEachCommit(t *testing.T) {
 	// Now choose one commit and check it in detail
 
 	commit := commits[initialSHA]
-	date, err := time.Parse("Mon Jan 02 15:04:05 2006 -0700", "Thu Feb 27 00:03:18 2014 -0800")
+	date, err := time.Parse("Mon Jan 02 15:04:05 2006 -0700", "Thu Feb 27 10:03:18 2014 +0200")
 	assert.NoError(t, err)
 
 	dmitriy := git.Signature{
 		Name:  "Dmitriy Zaporozhets",
 		Email: "dmitriy.zaporozhets@gmail.com",
-		When:  date,
+		When:  date.Local(),
 	}
 
 	assert.Equal(t, initialSHA, commit.Hash)
@@ -117,8 +183,9 @@ func TestEachCommit(t *testing.T) {
 
 func TestEachCommitGivenRangeOf3Commits(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
 	assert.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
@@ -133,8 +200,9 @@ func TestEachCommitGivenRangeOf3Commits(t *testing.T) {
 
 func TestEachCommitGivenRangeOf2Commits(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
 	assert.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
@@ -145,8 +213,9 @@ func TestEachCommitGivenRangeOf2Commits(t *testing.T) {
 
 func TestEachCommitGivenRangeOf1Commit(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, headSHA, headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, headSHA, headSHA)
 	assert.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
@@ -156,8 +225,9 @@ func TestEachCommitGivenRangeOf1Commit(t *testing.T) {
 
 func TestEmptyToSHADefaultsToHeadSHA(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", "")
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", "")
 	assert.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
@@ -182,8 +252,9 @@ func runEachFileChange(repo git.Repository) (map[string]*git.File, []string, err
 
 func TestEachFileChangeMod(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "", headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "", headSHA)
 	assert.NoError(t, err)
 
 	files, filePaths, err := runEachFileChange(repo)
@@ -251,8 +322,9 @@ func TestEachFileChangeMod(t *testing.T) {
 
 func TestEachFileChangeGivenRangeOfThreeCommits(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
 	assert.NoError(t, err)
 
 	_, filePaths, err := runEachFileChange(repo)
@@ -262,8 +334,9 @@ func TestEachFileChangeGivenRangeOfThreeCommits(t *testing.T) {
 
 func TestEachFileChangeGivenRangeOfTwoCommits(t *testing.T) {
 	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
 
-	repo, err := git.NewGoGitRepository(*testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
 	assert.NoError(t, err)
 
 	_, filePaths, err := runEachFileChange(repo)

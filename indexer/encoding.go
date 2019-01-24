@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 
+	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
+
 	"gitlab.com/lupine/icu"
 )
 
 var (
 	detector  *icu.CharsetDetector
-	converter = icu.NewCharsetConverter(maxBlobSize)
+	converter = icu.NewCharsetConverter(git.LimitFileSize)
 )
 
 func init() {

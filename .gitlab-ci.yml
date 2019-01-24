@@ -1,5 +1,6 @@
 .test-default: &test-default
   variables:
+    GITALY_CONNECTION_INFO: '{"address":"tcp://gitaly:8075", "storage":"default"}'
     V: "1"
     ELASTIC_CONNECTION_INFO: '{"url":["http://elasticsearch:9200"]}'
   stage: test
@@ -15,11 +16,19 @@
   <<: *test-default
   services:
     - elasticsearch:6.4.2
+    - name: registry.gitlab.com/gitlab-org/build/cng/gitaly:latest
+      # Disable the hooks so we don't have to stub the GitLab API
+      command: ["bash", "-c", "mkdir -p /home/git/repositories && rm -rf /srv/gitlab-shell/hooks/* && exec /scripts/process-wrapper"]
+      alias: gitaly
 
 .test-es5.6: &test-es56
   <<: *test-default
   services:
     - elasticsearch:5.6
+    - name: registry.gitlab.com/gitlab-org/build/cng/gitaly:latest
+      # Disable the hooks so we don't have to stub the GitLab API
+      command: ["bash", "-c", "mkdir -p /home/git/repositories && rm -rf /srv/gitlab-shell/hooks/* && exec /scripts/process-wrapper"]
+      alias: gitaly
 
 test 1.10:
   <<: *test-es6

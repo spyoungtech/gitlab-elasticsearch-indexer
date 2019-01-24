@@ -6,3 +6,4 @@
 /vendor/github.com/wadey/gocovmerge
 /vendor/golang.org/x/tools
 /vendor/manifest
+gitlab-elasticsearch-indexer

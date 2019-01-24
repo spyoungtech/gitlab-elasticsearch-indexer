@@ -65,6 +65,10 @@ func (i *Indexer) IndexBlobs() error {
 	return i.Repository.EachFileChange(i.SubmitBlob, i.SubmitBlob, i.RemoveBlob)
 }
 
+func (i *Indexer) Flush() error {
+	return i.Submitter.Flush()
+}
+
 func (i *Indexer) Index() error {
 	if err := i.IndexBlobs(); err != nil {
 		log.Print("Error while indexing blobs: ", err)

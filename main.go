@@ -33,11 +33,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	_, createIndex := os.LookupEnv("CREATE_INDEX")
-	if createIndex {
-		esClient.CreateIndex()
-	}
-
 	idx := &indexer.Indexer{
 		Submitter:  esClient,
 		Repository: repo,

@@ -8,7 +8,6 @@
   stage: test
   script:
     - apt-get update && apt-get -yy install libicu-dev
-    - make setup
     - make format
     - make cover
     - make

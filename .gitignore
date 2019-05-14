@@ -1,9 +1,3 @@
-/es-git-go
-/.GOPATH
 /bin
 /tmp
-/vendor/github.com/stretchr/testify
-/vendor/github.com/wadey/gocovmerge
-/vendor/golang.org/x/tools
-/vendor/manifest
-gitlab-elasticsearch-indexer
+/gitlab-elasticsearch-indexer

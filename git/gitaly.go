@@ -41,6 +41,7 @@ type gitalyClient struct {
 	repository              *pb.Repository
 	blobServiceClient       pb.BlobServiceClient
 	repositoryServiceClient pb.RepositoryServiceClient
+	refServiceClient        pb.RefServiceClient
 	commitServiceClient     pb.CommitServiceClient
 
 	FromHash string
@@ -75,6 +76,7 @@ func NewGitalyClient(config *StorageConfig, fromSHA, toSHA string) (*gitalyClien
 		repository:              repository,
 		blobServiceClient:       pb.NewBlobServiceClient(conn),
 		repositoryServiceClient: pb.NewRepositoryServiceClient(conn),
+		refServiceClient:        pb.NewRefServiceClient(conn),
 		commitServiceClient:     pb.NewCommitServiceClient(conn),
 	}
 
@@ -181,10 +183,17 @@ func (gc *gitalyClient) EachFileChange(ins, mod, del FileFunc) error {
 	return nil
 }
 
+// HEAD is not always set in some cases, so we find the last commit in
+// a default branch instead
 func (gc *gitalyClient) lookUpHEAD() (string, error) {
+	defaultBranchName, err := gc.findDefaultBranchName()
+	if err != nil {
+		return "", err
+	}
+
 	request := &pb.FindCommitRequest{
 		Repository: gc.repository,
-		Revision:   []byte("HEAD"),
+		Revision:   defaultBranchName,
 	}
 
 	response, err := gc.commitServiceClient.FindCommit(context.Background(), request)
@@ -192,6 +201,18 @@ func (gc *gitalyClient) lookUpHEAD() (string, error) {
 		return "", fmt.Errorf("Cannot look up HEAD: %v", err)
 	}
 	return response.Commit.Id, nil
+}
+
+func (gc *gitalyClient) findDefaultBranchName() ([]byte, error) {
+	request := &pb.FindDefaultBranchNameRequest{
+		Repository: gc.repository,
+	}
+
+	response, err := gc.refServiceClient.FindDefaultBranchName(context.Background(), request)
+	if err != nil {
+		return nil, fmt.Errorf("Cannot find a default branch: %v", err)
+	}
+	return response.Name, nil
 }
 
 func (gc *gitalyClient) getBlob(oid string) (io.ReadCloser, error) {

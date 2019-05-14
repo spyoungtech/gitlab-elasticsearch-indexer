@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	pb "gitlab.com/gitlab-org/gitaly-proto/go/gitalypb"
@@ -27,9 +26,9 @@ var (
 const (
 	projectID         = "667"
 	headSHA           = "b83d6e391c22777fca1ed3012fce84f633d7fed0"
-	testRepo          = "gitlab-org/gitlab-test.git"
+	testRepo          = "test-gitlab-elasticsearch-indexer/gitlab-test.git"
 	testRepoPath      = "https://gitlab.com/gitlab-org/gitlab-test.git"
-	testRepoNamespace = "gitlab-org"
+	testRepoNamespace = "test-gitlab-elasticsearch-indexer"
 )
 
 type gitalyConnectionInfo struct {
@@ -44,38 +43,23 @@ func init() {
 	}
 }
 
-func ensureGitalyRepository(t *testing.T) error {
+func ensureGitalyRepository(t *testing.T) {
 	conn, err := gitalyClient.Dial(gitalyConnInfo.Address, gitalyClient.DefaultDialOpts)
-	if err != nil {
-		return fmt.Errorf("did not connect: %s", err)
-	}
+	require.NoError(t, err)
 
 	namespace := pb.NewNamespaceServiceClient(conn)
-
 	repository := pb.NewRepositoryServiceClient(conn)
 
 	// Remove the repository if it already exists, for consistency
-	rmNsReq := &pb.RemoveNamespaceRequest{
-		StorageName: gitalyConnInfo.Storage,
-		Name:        testRepoNamespace,
-	}
+	rmNsReq := &pb.RemoveNamespaceRequest{StorageName: gitalyConnInfo.Storage, Name: testRepoNamespace}
 	_, err = namespace.RemoveNamespace(context.Background(), rmNsReq)
-	if err != nil {
-		return err
-	}
+	require.NoError(t, err)
 
-	gl_repository := &pb.Repository{
-		StorageName:  gitalyConnInfo.Storage,
-		RelativePath: testRepo,
-	}
-
-	createReq := &pb.CreateRepositoryFromURLRequest{
-		Repository: gl_repository,
-		Url:        testRepoPath,
-	}
+	gl_repository := &pb.Repository{StorageName: gitalyConnInfo.Storage, RelativePath: testRepo}
+	createReq := &pb.CreateRepositoryFromURLRequest{Repository: gl_repository, Url: testRepoPath}
 
 	_, err = repository.CreateRepositoryFromURL(context.Background(), createReq)
-	return err
+	require.NoError(t, err)
 }
 
 func checkDeps(t *testing.T) {
@@ -101,9 +85,9 @@ func buildIndex(t *testing.T) (*elastic.Client, func()) {
 	os.Setenv("RAILS_ENV", railsEnv)
 
 	client, err := elastic.FromEnv(projectID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.NoError(t, client.CreateIndex())
+	require.NoError(t, client.CreateIndex())
 
 	return client, func() {
 		client.DeleteIndex()
@@ -132,19 +116,19 @@ func run(from, to string) error {
 
 func TestIndexingRemovesFiles(t *testing.T) {
 	checkDeps(t)
-	require.NoError(t, ensureGitalyRepository(t))
+	ensureGitalyRepository(t)
 	c, td := buildIndex(t)
 	defer td()
 
 	// The commit before files/empty is removed - so it should be indexed
-	assert.NoError(t, run("", "19e2e9b4ef76b422ce1154af39a91323ccc57434"))
+	require.NoError(t, run("", "19e2e9b4ef76b422ce1154af39a91323ccc57434"))
 	_, err := c.GetBlob("files/empty")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	// Now we expect it to have been removed
-	assert.NoError(t, run("19e2e9b4ef76b422ce1154af39a91323ccc57434", "08f22f255f082689c0d7d39d19205085311542bc"))
+	require.NoError(t, run("19e2e9b4ef76b422ce1154af39a91323ccc57434", "08f22f255f082689c0d7d39d19205085311542bc"))
 	_, err = c.GetBlob("files/empty")
-	assert.Error(t, err)
+	require.Error(t, err)
 }
 
 type document struct {
@@ -157,11 +141,11 @@ type document struct {
 // Go source is defined to be UTF-8 encoded, so literals here are UTF-8
 func TestIndexingTranscodesToUTF8(t *testing.T) {
 	checkDeps(t)
-	require.NoError(t, ensureGitalyRepository(t))
+	ensureGitalyRepository(t)
 	c, td := buildIndex(t)
 	defer td()
 
-	assert.NoError(t, run("", headSHA))
+	require.NoError(t, run("", headSHA))
 
 	for _, tc := range []struct {
 		path     string
@@ -172,41 +156,41 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 	} {
 
 		blob, err := c.GetBlob(tc.path)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		blobDoc := &document{}
-		assert.NoError(t, json.Unmarshal(*blob.Source, &blobDoc))
+		require.NoError(t, json.Unmarshal(*blob.Source, &blobDoc))
 
-		assert.Equal(t, tc.expected, blobDoc.Blob.Content)
+		require.Equal(t, tc.expected, blobDoc.Blob.Content)
 	}
 }
 
 func TestIndexingGitlabTest(t *testing.T) {
 	checkDeps(t)
-	require.NoError(t, ensureGitalyRepository(t))
+	ensureGitalyRepository(t)
 	c, td := buildIndex(t)
 	defer td()
 
-	assert.NoError(t, run("", headSHA))
+	require.NoError(t, run("", headSHA))
 
 	// Check the indexing of a commit
 	commit, err := c.GetCommit(headSHA)
-	assert.NoError(t, err)
-	assert.True(t, commit.Found)
-	assert.Equal(t, "doc", commit.Type)
-	assert.Equal(t, projectID+"_"+headSHA, commit.Id)
-	assert.Equal(t, "project_"+projectID, commit.Routing)
+	require.NoError(t, err)
+	require.True(t, commit.Found)
+	require.Equal(t, "doc", commit.Type)
+	require.Equal(t, projectID+"_"+headSHA, commit.Id)
+	require.Equal(t, "project_"+projectID, commit.Routing)
 
 	data := make(map[string]interface{})
-	assert.NoError(t, json.Unmarshal(*commit.Source, &data))
+	require.NoError(t, json.Unmarshal(*commit.Source, &data))
 
 	commitDoc, ok := data["commit"]
-	assert.True(t, ok)
+	require.True(t, ok)
 
 	date, err := time.Parse("20060102T150405-0700", "20160927T143746+0000")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(
+	require.Equal(
 		t,
 		map[string]interface{}{
 			"type": "commit",
@@ -229,18 +213,18 @@ func TestIndexingGitlabTest(t *testing.T) {
 
 	// Check the indexing of a text blob
 	blob, err := c.GetBlob("README.md")
-	assert.NoError(t, err)
-	assert.True(t, blob.Found)
-	assert.Equal(t, "doc", blob.Type)
-	assert.Equal(t, projectID+"_README.md", blob.Id)
-	assert.Equal(t, "project_"+projectID, blob.Routing)
+	require.NoError(t, err)
+	require.True(t, blob.Found)
+	require.Equal(t, "doc", blob.Type)
+	require.Equal(t, projectID+"_README.md", blob.Id)
+	require.Equal(t, "project_"+projectID, blob.Routing)
 
 	data = make(map[string]interface{})
-	assert.NoError(t, json.Unmarshal(*blob.Source, &data))
+	require.NoError(t, json.Unmarshal(*blob.Source, &data))
 
 	blobDoc, ok := data["blob"]
-	assert.True(t, ok)
-	assert.Equal(
+	require.True(t, ok)
+	require.Equal(
 		t,
 		map[string]interface{}{
 			"type":       "blob",
@@ -257,19 +241,19 @@ func TestIndexingGitlabTest(t *testing.T) {
 
 	// Check that a binary blob isn't indexed
 	_, err = c.GetBlob("Gemfile.zip")
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// Test that timezones are preserved
 	commit, err = c.GetCommit("498214de67004b1da3d820901307bed2a68a8ef6")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	cDoc := &document{}
-	assert.NoError(t, json.Unmarshal(*commit.Source, &cDoc))
+	require.NoError(t, json.Unmarshal(*commit.Source, &cDoc))
 
 	date, err = time.Parse("20060102T150405-0700", "20160921T181326+0300")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	expectedDate := date.Local().Format("20060102T150405-0700")
 
-	assert.Equal(t, expectedDate, cDoc.Commit.Author.Time)
-	assert.Equal(t, expectedDate, cDoc.Commit.Committer.Time)
+	require.Equal(t, expectedDate, cDoc.Commit.Author.Time)
+	require.Equal(t, expectedDate, cDoc.Commit.Committer.Time)
 }

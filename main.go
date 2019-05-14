@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"os"
 
 	log "github.com/sirupsen/logrus"
@@ -9,19 +10,33 @@ import (
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
 )
 
+var (
+	versionFlag = flag.Bool("version", false, "Print the version and exit")
+
+	// Overriden in the makefile
+	Version   = "dev"
+	BuildTime = ""
+)
+
 func main() {
-	var projectID, projectPath, fromSHA, toSHA string
+	flag.Parse()
 
-	configureLogger()
-
-	if len(os.Args) != 3 {
-		log.Fatalf("Usage: %s <project-id> <project-path>", os.Args[0])
+	if *versionFlag {
+		log.Printf("%s %s (built at: %s)", os.Args[0], Version, BuildTime)
+		os.Exit(0)
 	}
 
-	projectID = os.Args[1]
-	projectPath = os.Args[2]
-	fromSHA = os.Getenv("FROM_SHA")
-	toSHA = os.Getenv("TO_SHA")
+	configureLogger()
+	args := flag.Args()
+
+	if len(args) != 2 {
+		log.Fatalf("Usage: %s [ --version | <project-id> <project-path> ]", os.Args[0])
+	}
+
+	projectID := args[0]
+	projectPath := args[1]
+	fromSHA := os.Getenv("FROM_SHA")
+	toSHA := os.Getenv("TO_SHA")
 
 	repo, err := git.NewGitalyClientFromEnv(projectPath, fromSHA, toSHA)
 	if err != nil {

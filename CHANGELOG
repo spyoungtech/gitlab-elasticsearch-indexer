@@ -1,5 +1,11 @@
 # GitLab Elasticsearch Indexer
 
+## v1.1.0
+
+- Fix indexing repos when there is no HEAD !21
+- Add a --version flag !25
+- Don't allow the binary to create an index !26
+
 ## v1.0.0
 
 -  Use Gitaly to fetch repository data !13

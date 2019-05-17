@@ -80,14 +80,26 @@ func checkDeps(t *testing.T) {
 	}
 }
 
-func buildIndex(t *testing.T) (*elastic.Client, func()) {
+func buildWorkingIndex(t *testing.T) (*elastic.Client, func()) {
+	return buildIndex(t, true)
+}
+
+func buildBrokenIndex(t *testing.T) (*elastic.Client, func()) {
+	return buildIndex(t, false)
+}
+
+func buildIndex(t *testing.T, working bool) (*elastic.Client, func()) {
 	railsEnv := fmt.Sprintf("test-integration-%d", time.Now().Unix())
 	os.Setenv("RAILS_ENV", railsEnv)
 
 	client, err := elastic.FromEnv(projectID)
 	require.NoError(t, err)
 
-	require.NoError(t, client.CreateIndex())
+	if working {
+		require.NoError(t, client.CreateWorkingIndex())
+	} else {
+		require.NoError(t, client.CreateBrokenIndex())
+	}
 
 	return client, func() {
 		client.DeleteIndex()
@@ -117,7 +129,8 @@ func run(from, to string) error {
 func TestIndexingRemovesFiles(t *testing.T) {
 	checkDeps(t)
 	ensureGitalyRepository(t)
-	c, td := buildIndex(t)
+	c, td := buildWorkingIndex(t)
+
 	defer td()
 
 	// The commit before files/empty is removed - so it should be indexed
@@ -142,7 +155,7 @@ type document struct {
 func TestIndexingTranscodesToUTF8(t *testing.T) {
 	checkDeps(t)
 	ensureGitalyRepository(t)
-	c, td := buildIndex(t)
+	c, td := buildWorkingIndex(t)
 	defer td()
 
 	require.NoError(t, run("", headSHA))
@@ -170,7 +183,7 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 func TestIndexingGitlabTest(t *testing.T) {
 	checkDeps(t)
 	ensureGitalyRepository(t)
-	c, td := buildIndex(t)
+	c, td := buildWorkingIndex(t)
 	defer td()
 
 	require.NoError(t, run("", headSHA))

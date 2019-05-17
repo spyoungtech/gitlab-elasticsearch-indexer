@@ -152,7 +152,7 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 
 	assert.Equal(t, projectID, client.ParentID())
 
-	assert.NoError(t, client.CreateIndex())
+	assert.NoError(t, client.CreateWorkingIndex())
 
 	blobDoc := map[string]interface{}{}
 	client.Index(projectID+"_foo", blobDoc)

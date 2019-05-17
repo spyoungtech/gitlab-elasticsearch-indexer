@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-var indexMapping = `
+const IndexMapping = `
 {
 	"settings": {
 		"index.mapping.single_type": true,
@@ -117,262 +117,265 @@ var indexMapping = `
 			"_routing": {
 				"required": true
 			},
-			"properties": {
-				"archived": {
-						"type": "boolean"
-				},
-				"assignee_id": {
-						"type": "integer"
-				},
-				"author_id": {
-						"type": "integer"
-				},
-				"blob": {
-						"properties": {
-								"commit_sha": {
-										"analyzer": "sha_analyzer",
-										"index_options": "offsets",
-										"type": "text"
-								},
-								"content": {
-										"analyzer": "code_analyzer",
-										"index_options": "offsets",
-										"search_analyzer": "code_search_analyzer",
-										"type": "text"
-								},
-								"file_name": {
-										"analyzer": "code_analyzer",
-										"search_analyzer": "code_search_analyzer",
-										"type": "text"
-								},
-								"id": {
-										"analyzer": "sha_analyzer",
-										"index_options": "offsets",
-										"type": "text"
-								},
-								"language": {
-										"type": "keyword"
-								},
-								"oid": {
-										"analyzer": "sha_analyzer",
-										"index_options": "offsets",
-										"type": "text"
-								},
-								"path": {
-										"analyzer": "path_analyzer",
-										"type": "text"
-								},
-								"rid": {
-										"type": "keyword"
-								},
-								"type": {
-									"type": "keyword"
-								}
-						}
-				},
-				"commit": {
-						"properties": {
-								"author": {
-										"properties": {
-												"email": {
-														"index_options": "offsets",
-														"type": "text"
-												},
-												"name": {
-														"index_options": "offsets",
-														"type": "text"
-												},
-												"time": {
-														"format": "basic_date_time_no_millis",
-														"type": "date"
-												}
-										}
-								},
-								"committer": {
-										"properties": {
-												"email": {
-														"index_options": "offsets",
-														"type": "text"
-												},
-												"name": {
-														"index_options": "offsets",
-														"type": "text"
-												},
-												"time": {
-														"format": "basic_date_time_no_millis",
-														"type": "date"
-												}
-										}
-								},
-								"id": {
-										"analyzer": "sha_analyzer",
-										"index_options": "offsets",
-										"type": "text"
-								},
-								"message": {
-										"index_options": "offsets",
-										"type": "text"
-								},
-								"rid": {
-										"type": "keyword"
-								},
-								"sha": {
-										"analyzer": "sha_analyzer",
-										"index_options": "offsets",
-										"type": "text"
-								},
-								"type": {
-									"type": "keyword"
-								}
-						}
-				},
-				"confidential": {
-						"type": "boolean"
-				},
-				"content": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"created_at": {
-						"type": "date"
-				},
-				"description": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"file_name": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"id": {
-						"type": "integer"
-				},
-				"iid": {
-						"type": "integer"
-				},
-				"issue": {
-						"properties": {
-								"assignee_id": {
-										"type": "integer"
-								},
-								"author_id": {
-										"type": "integer"
-								},
-								"confidential": {
-										"type": "boolean"
-								}
-						}
-				},
-				"issues_access_level": {
-						"type": "integer"
-				},
-				"join_field": {
-						"eager_global_ordinals": true,
-						"relations": {
-								"project": [
-										"note",
-										"blob",
-										"issue",
-										"milestone",
-										"wiki_blob",
-										"commit",
-										"merge_request"
-								]
-						},
-						"type": "join"
-				},
-				"last_activity_at": {
-						"type": "date"
-				},
-				"last_pushed_at": {
-						"type": "date"
-				},
-				"merge_requests_access_level": {
-						"type": "integer"
-				},
-				"merge_status": {
-						"type": "text"
-				},
-				"name": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"name_with_namespace": {
-						"analyzer": "my_ngram_analyzer",
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"namespace_id": {
-						"type": "integer"
-				},
-				"note": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"noteable_id": {
-						"type": "keyword"
-				},
-				"noteable_type": {
-						"type": "keyword"
-				},
-				"path": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"path_with_namespace": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"project_id": {
-						"type": "integer"
-				},
-				"repository_access_level": {
-						"type": "integer"
-				},
-				"snippets_access_level": {
-						"type": "integer"
-				},
-				"source_branch": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"source_project_id": {
-						"type": "integer"
-				},
-				"state": {
-						"type": "text"
-				},
-				"target_branch": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"target_project_id": {
-						"type": "integer"
-				},
-				"title": {
-						"index_options": "offsets",
-						"type": "text"
-				},
-				"type": {
-						"type": "keyword"
-				},
-				"updated_at": {
-						"type": "date"
-				},
-				"visibility_level": {
-						"type": "integer"
-				},
-				"wiki_access_level": {
-						"type": "integer"
-				}
+			"properties": __PROPERTIES__
+		}
+	}
+}`
+
+const IndexProperties = `
+{
+	"archived": {
+		"type": "boolean"
+	},
+	"assignee_id": {
+		"type": "integer"
+	},
+	"author_id": {
+		"type": "integer"
+	},
+	"blob": {
+		"properties": {
+			"commit_sha": {
+				"analyzer": "sha_analyzer",
+				"index_options": "offsets",
+				"type": "text"
+			},
+			"content": {
+				"analyzer": "code_analyzer",
+				"index_options": "offsets",
+				"search_analyzer": "code_search_analyzer",
+				"type": "text"
+			},
+			"file_name": {
+				"analyzer": "code_analyzer",
+				"search_analyzer": "code_search_analyzer",
+				"type": "text"
+			},
+			"id": {
+				"analyzer": "sha_analyzer",
+				"index_options": "offsets",
+				"type": "text"
+			},
+			"language": {
+				"type": "keyword"
+			},
+			"oid": {
+				"analyzer": "sha_analyzer",
+				"index_options": "offsets",
+				"type": "text"
+			},
+			"path": {
+				"analyzer": "path_analyzer",
+				"type": "text"
+			},
+			"rid": {
+				"type": "keyword"
+			},
+			"type": {
+				"type": "keyword"
 			}
 		}
+	},
+	"commit": {
+		"properties": {
+			"author": {
+				"properties": {
+					"email": {
+						"index_options": "offsets",
+						"type": "text"
+					},
+					"name": {
+						"index_options": "offsets",
+						"type": "text"
+					},
+					"time": {
+						"format": "basic_date_time_no_millis",
+						"type": "date"
+					}
+				}
+			},
+			"committer": {
+				"properties": {
+					"email": {
+						"index_options": "offsets",
+						"type": "text"
+					},
+					"name": {
+						"index_options": "offsets",
+						"type": "text"
+					},
+					"time": {
+						"format": "basic_date_time_no_millis",
+						"type": "date"
+					}
+				}
+			},
+			"id": {
+				"analyzer": "sha_analyzer",
+				"index_options": "offsets",
+				"type": "text"
+			},
+			"message": {
+				"index_options": "offsets",
+				"type": "text"
+			},
+			"rid": {
+				"type": "keyword"
+			},
+			"sha": {
+				"analyzer": "sha_analyzer",
+				"index_options": "offsets",
+				"type": "text"
+			},
+			"type": {
+				"type": "keyword"
+			}
+		}
+	},
+	"confidential": {
+		"type": "boolean"
+	},
+	"content": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"created_at": {
+		"type": "date"
+	},
+	"description": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"file_name": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"id": {
+		"type": "integer"
+	},
+	"iid": {
+		"type": "integer"
+	},
+	"issue": {
+		"properties": {
+			"assignee_id": {
+				"type": "integer"
+			},
+			"author_id": {
+				"type": "integer"
+			},
+			"confidential": {
+				"type": "boolean"
+			}
+		}
+	},
+	"issues_access_level": {
+		"type": "integer"
+	},
+	"join_field": {
+		"eager_global_ordinals": true,
+		"relations": {
+			"project": [
+				"note",
+				"blob",
+				"issue",
+				"milestone",
+				"wiki_blob",
+				"commit",
+				"merge_request"
+			]
+		},
+		"type": "join"
+	},
+	"last_activity_at": {
+		"type": "date"
+	},
+	"last_pushed_at": {
+		"type": "date"
+	},
+	"merge_requests_access_level": {
+		"type": "integer"
+	},
+	"merge_status": {
+		"type": "text"
+	},
+	"name": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"name_with_namespace": {
+		"analyzer": "my_ngram_analyzer",
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"namespace_id": {
+		"type": "integer"
+	},
+	"note": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"noteable_id": {
+		"type": "keyword"
+	},
+	"noteable_type": {
+		"type": "keyword"
+	},
+	"path": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"path_with_namespace": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"project_id": {
+		"type": "integer"
+	},
+	"repository_access_level": {
+		"type": "integer"
+	},
+	"snippets_access_level": {
+		"type": "integer"
+	},
+	"source_branch": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"source_project_id": {
+		"type": "integer"
+	},
+	"state": {
+		"type": "text"
+	},
+	"target_branch": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"target_project_id": {
+		"type": "integer"
+	},
+	"title": {
+		"index_options": "offsets",
+		"type": "text"
+	},
+	"type": {
+		"type": "keyword"
+	},
+	"updated_at": {
+		"type": "date"
+	},
+	"visibility_level": {
+		"type": "integer"
+	},
+	"wiki_access_level": {
+		"type": "integer"
 	}
 }
 `
 
-// CreateIndex creates an index matching that created by gitlab-elasticsearch-git v1.1.1
-func (c *Client) CreateIndex() error {
+// createIndex creates an index matching that created by gitlab-elasticsearch-git v1.1.1
+func (c *Client) createIndex(mapping string) error {
 	info, err := c.Client.NodesInfo().Do(context.Background())
 	if err != nil {
 		return err
@@ -383,14 +386,14 @@ func (c *Client) CreateIndex() error {
 		version, _ := strconv.Atoi(string(node.Version[0]))
 		if version >= 6 {
 			// single_type is an option only available on 5.6 that ES6 cannot handle
-			indexMapping = strings.Replace(indexMapping, "\"index.mapping.single_type\": true,", "", 1)
+			mapping = strings.Replace(mapping, `"index.mapping.single_type": true,`, "", 1)
 		}
 
 		// We only look at the first node and assume they're all the same version
 		break
 	}
 
-	createIndex, err := c.Client.CreateIndex(c.IndexName).BodyString(indexMapping).Do(context.Background())
+	createIndex, err := c.Client.CreateIndex(c.IndexName).BodyString(mapping).Do(context.Background())
 	if err != nil {
 		return err
 	}
@@ -400,6 +403,20 @@ func (c *Client) CreateIndex() error {
 	}
 
 	return nil
+}
+
+// CreateIndex creates an index matching that created by gitlab-rails.
+func (c *Client) CreateWorkingIndex() error {
+	mapping := strings.Replace(IndexMapping, "__PROPERTIES__", IndexProperties, -1)
+
+	return c.createIndex(mapping)
+}
+
+// For testing
+func (c *Client) CreateBrokenIndex() error {
+	mapping := strings.Replace(IndexMapping, "__PROPERTIES__", "{}", -1)
+
+	return c.createIndex(mapping)
 }
 
 func (c *Client) DeleteIndex() error {

@@ -113,6 +113,7 @@ var indexMapping = `
 	},
 	"mappings": {
 		"doc": {
+			"dynamic": "strict",
 			"_routing": {
 				"required": true
 			},

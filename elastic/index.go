@@ -113,6 +113,7 @@ var indexMapping = `
 	},
 	"mappings": {
 		"doc": {
+			"dynamic": "strict",
 			"_routing": {
 				"required": true
 			},
@@ -163,6 +164,9 @@ var indexMapping = `
 								},
 								"rid": {
 										"type": "keyword"
+								},
+								"type": {
+									"type": "keyword"
 								}
 						}
 				},
@@ -184,7 +188,7 @@ var indexMapping = `
 												}
 										}
 								},
-								"commiter": {
+								"committer": {
 										"properties": {
 												"email": {
 														"index_options": "offsets",
@@ -216,6 +220,9 @@ var indexMapping = `
 										"analyzer": "sha_analyzer",
 										"index_options": "offsets",
 										"type": "text"
+								},
+								"type": {
+									"type": "keyword"
 								}
 						}
 				},

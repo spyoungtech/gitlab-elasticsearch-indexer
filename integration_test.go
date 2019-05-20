@@ -148,20 +148,22 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 	require.NoError(t, run("", headSHA))
 
 	for _, tc := range []struct {
+		name     string
 		path     string
 		expected string
 	}{
-		{"encoding/iso8859.txt", "狞\n"},                                                         // GB18030
-		{"encoding/test.txt", "これはテストです。\nこれもマージして下さい。\n\nAdd excel file.\nDelete excel file."}, // SHIFT_JIS
+		{"GB18030", "encoding/iso8859.txt", "狞\n"},
+		{"SHIFT_JIS", "encoding/test.txt", "これはテストです。\nこれもマージして下さい。\n\nAdd excel file.\nDelete excel file."},
 	} {
+		t.Run(tc.name, func(t *testing.T) {
+			blob, err := c.GetBlob(tc.path)
+			require.NoError(t, err)
 
-		blob, err := c.GetBlob(tc.path)
-		require.NoError(t, err)
+			blobDoc := &document{}
+			require.NoError(t, json.Unmarshal(*blob.Source, &blobDoc))
 
-		blobDoc := &document{}
-		require.NoError(t, json.Unmarshal(*blob.Source, &blobDoc))
-
-		require.Equal(t, tc.expected, blobDoc.Blob.Content)
+			require.Equal(t, tc.expected, blobDoc.Blob.Content)
+		})
 	}
 }
 

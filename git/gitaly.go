@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context"
 
 	pb "gitlab.com/gitlab-org/gitaly-proto/go/gitalypb"
-	"gitlab.com/gitlab-org/gitaly/auth"
+	gitalyauth "gitlab.com/gitlab-org/gitaly/auth"
 	gitalyclient "gitlab.com/gitlab-org/gitaly/client"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"

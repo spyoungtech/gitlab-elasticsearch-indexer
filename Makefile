@@ -1,129 +1,59 @@
-# The import path is where your repository can be found.
-# To import subpackages, always prepend the full import path.
-# If you change this, run `make clean`. Read more: https://git.io/vM7zV
-IMPORT_PATH := gitlab.com/gitlab-org/gitlab-elasticsearch-indexer
-
-GO15VENDOREXPERIMENT := 1
-
 PREFIX ?= /usr/local
 
-# V := 1 # When V is set, print commands and build progress.
+# Ensure we always use go modules
+GO111MODULE := on
 
-# Space separated patterns of packages to skip in list, test, format.
-IGNORED_PACKAGES := /vendor/
+# V := 1 # When V is set, print commands and build progress.
 
 .PHONY: all
 all: build
 
 .PHONY: build
-build: .GOPATH/.ok
-	$Q go install $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)
+build:
+	$Q go build $(if $V,-v) $(VERSION_FLAGS) -o bin/gitlab-elasticsearch-indexer .
 
 install: build
 	install -d ${PREFIX}/bin
 	install -m755 bin/gitlab-elasticsearch-indexer ${PREFIX}/bin
 
-### Code not in the repository root? Another binary? Add to the path like this.
-# .PHONY: otherbin
-# otherbin: .GOPATH/.ok
-# 	$Q go install $(if $V,-v) $(VERSION_FLAGS) $(IMPORT_PATH)/cmd/otherbin
-
-##### ^^^^^^ EDIT ABOVE ^^^^^^ #####
-
-##### =====> Utility targets <===== #####
-
 .PHONY: clean test list cover format
 
 clean:
-	$Q rm -rf bin .GOPATH tmp
+	$Q rm -rf bin tmp
 
-test: .GOPATH/.ok
-	$Q go test $(if $V,-v) -i -race $(allpackages) # install -race libs to speed up next run
-ifndef CI
-	$Q go vet $(allpackages)
-	$Q GODEBUG=cgocheck=2 go test $(if $V,-v) -race $(allpackages)
-else
-	$Q ( go vet $(allpackages); echo $$? ) | \
-	    tee .GOPATH/test/vet.txt | sed '$$ d'; exit $$(tail -1 .GOPATH/test/vet.txt)
-	$Q ( GODEBUG=cgocheck=2 go test -v -race $(allpackages); echo $$? ) | \
-	    tee .GOPATH/test/output.txt | sed '$$ d'; exit $$(tail -1 .GOPATH/test/output.txt)
-endif
+test:
+	# install -race libs to speed up next run
+	$Q go test $(if $V,-v) -i -race ./...
+	$Q go vet ./...
+	$Q GODEBUG=cgocheck=2 go test $(if $V,-v) -race ./...
 
-list: .GOPATH/.ok
-	@echo $(allpackages)
-
-cover: bin/gocovmerge .GOPATH/.ok
+cover: tmp
 	@echo "NOTE: make cover does not exit 1 on failure, don't use it to check for tests success!"
-	$Q rm -f .GOPATH/cover/*.out .GOPATH/cover/all.merged
-	$(if $V,@echo "-- go test -coverpkg=./... -coverprofile=.GOPATH/cover/... ./...")
-	@for MOD in $(allpackages); do \
-		go test -coverpkg=`echo $(allpackages)|tr " " ","` \
-			-coverprofile=.GOPATH/cover/unit-`echo $$MOD|tr "/" "_"`.out \
-			$$MOD 2>&1 | grep -v "no packages being tested depend on"; \
-	done
-	$Q ./bin/gocovmerge .GOPATH/cover/*.out > .GOPATH/cover/all.merged
-ifndef CI
-	$Q go tool cover -html .GOPATH/cover/all.merged
-else
-	$Q go tool cover -html .GOPATH/cover/all.merged -o .GOPATH/cover/all.html
-endif
+	$Q go test -short -cover -coverprofile=tmp/test.coverage ./...
+	$Q go tool cover -html tmp/test.coverage -o tmp/test.coverage.html
 	@echo ""
 	@echo "=====> Total test coverage: <====="
 	@echo ""
-	$Q go tool cover -func .GOPATH/cover/all.merged
+	$Q go tool cover -func tmp/test.coverage
 
-format: bin/goimports .GOPATH/.ok
-	$Q find .GOPATH/src/$(IMPORT_PATH)/ -iname \*.go | grep -v \
-	    -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) | xargs ./bin/goimports -w
+format: bin/goimports
+	$Q find . -iname \*.go | xargs ./bin/goimports $(if $V,-v) -w
 
 ##### =====> Internals <===== #####
-
-.PHONY: setup
-setup: clean .GOPATH/.ok
-	@if ! grep "/.GOPATH" .gitignore > /dev/null 2>&1; then \
-	    echo "/.GOPATH" >> .gitignore; \
-	    echo "/bin" >> .gitignore; \
-	fi
-	go get -u github.com/FiloSottile/gvt
-	- ./bin/gvt fetch golang.org/x/tools/cmd/goimports
-	- ./bin/gvt fetch github.com/wadey/gocovmerge
-	- ./bin/gvt fetch github.com/stretchr/testify
 
 VERSION          := $(shell git describe --tags --always --dirty="-dev")
 DATE             := $(shell date -u '+%Y-%m-%d-%H%M UTC')
 VERSION_FLAGS    := -ldflags='-X "main.Version=$(VERSION)" -X "main.BuildTime=$(DATE)"'
 
-# cd into the GOPATH to workaround ./... not following symlinks
-_allpackages = $(shell ( cd $(CURDIR)/.GOPATH/src/$(IMPORT_PATH) && \
-    GOPATH=$(CURDIR)/.GOPATH go list ./... 2>&1 1>&3 | \
-    grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)) 1>&2 ) 3>&1 | \
-    grep -v -e "^$$" $(addprefix -e ,$(IGNORED_PACKAGES)))
-
-# memoize allpackages, so that it's executed only once and only if used
-allpackages = $(if $(__allpackages),,$(eval __allpackages := $$(_allpackages)))$(__allpackages)
-
-export GOPATH := $(CURDIR)/.GOPATH
-unexport GOBIN
-
 Q := $(if $V,,@)
 
-.GOPATH/.ok:
-	$Q mkdir -p "$(dir .GOPATH/src/$(IMPORT_PATH))"
-	$Q ln -s ../../../.. ".GOPATH/src/$(IMPORT_PATH)"
-	$Q mkdir -p .GOPATH/test .GOPATH/cover
-	$Q mkdir -p bin
-	$Q ln -s ../bin .GOPATH/bin
-	$Q touch $@
+.PHONY: tmp
+tmp:
+	mkdir tmp
 
-.PHONY: bin/gocovmerge bin/goimports
-bin/gocovmerge: .GOPATH/.ok
-	@test -d ./vendor/github.com/wadey/gocovmerge || \
-	    { echo "Vendored gocovmerge not found, try running 'make setup'..."; exit 1; }
-	$Q go install $(IMPORT_PATH)/vendor/github.com/wadey/gocovmerge
-bin/goimports: .GOPATH/.ok
-	@test -d ./vendor/golang.org/x/tools/cmd/goimports || \
-	    { echo "Vendored goimports not found, try running 'make setup'..."; exit 1; }
-	$Q go install $(IMPORT_PATH)/vendor/golang.org/x/tools/cmd/goimports
+.PHONY: bin/goimports
+bin/goimports:
+	$Q go build -o bin/goimports golang.org/x/tools/cmd/goimports
 
 # Based on https://github.com/cloudflare/hellogopher - v1.1 - MIT License
 #

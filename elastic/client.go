@@ -3,6 +3,7 @@ package elastic
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -30,10 +31,11 @@ const (
 )
 
 type Client struct {
-	IndexName string
-	ProjectID string
-	Client    *elastic.Client
-	bulk      *elastic.BulkProcessor
+	IndexName  string
+	ProjectID  string
+	Client     *elastic.Client
+	bulk       *elastic.BulkProcessor
+	bulkFailed bool
 }
 
 // FromEnv creates an Elasticsearch client from the `ELASTIC_CONNECTION_INFO`
@@ -56,6 +58,23 @@ func FromEnv(projectID string) (*Client, error) {
 	config.ProjectID = projectID
 
 	return NewClient(config)
+}
+
+func (c *Client) afterCallback(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
+	if response.Errors {
+		numFailed := len(response.Failed())
+		if numFailed > 0 {
+			c.bulkFailed = true
+			total := numFailed + len(response.Succeeded())
+
+			log.Printf("bulk request %v: failed to insert %v/%v documents ", executionId, numFailed, total)
+		}
+	}
+
+	if err != nil {
+		c.bulkFailed = true
+		log.Printf("bulk request %v: error: %v", executionId, err)
+	}
 }
 
 func NewClient(config *Config) (*Client, error) {
@@ -91,21 +110,25 @@ func NewClient(config *Config) (*Client, error) {
 		return nil, err
 	}
 
+	wrappedClient := &Client{
+		IndexName: config.IndexName,
+		ProjectID: config.ProjectID,
+		Client:    client,
+	}
+
 	bulk, err := client.BulkProcessor().
 		Workers(BulkWorkers).
 		BulkSize(MaxBulkSize).
+		After(wrappedClient.afterCallback).
 		Do(context.Background())
 
 	if err != nil {
 		return nil, err
 	}
 
-	return &Client{
-		IndexName: config.IndexName,
-		ProjectID: config.ProjectID,
-		Client:    client,
-		bulk:      bulk,
-	}, nil
+	wrappedClient.bulk = bulk
+
+	return wrappedClient, nil
 }
 
 // ResolveAWSCredentials returns Credentials object
@@ -136,7 +159,13 @@ func (c *Client) ParentID() string {
 }
 
 func (c *Client) Flush() error {
-	return c.bulk.Flush()
+	err := c.bulk.Flush()
+
+	if err == nil && c.bulkFailed {
+		err = fmt.Errorf("Failed to perform all operations")
+	}
+
+	return err
 }
 
 func (c *Client) Close() {

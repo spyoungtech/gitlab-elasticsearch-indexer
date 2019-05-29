@@ -82,6 +82,7 @@ func (i *Indexer) Index() error {
 
 	if err := i.Submitter.Flush(); err != nil {
 		log.Print("Error while flushing requests: ", err)
+		return err
 	}
 
 	return nil

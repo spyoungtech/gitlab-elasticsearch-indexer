@@ -159,6 +159,22 @@ func validCommit(gitCommit *git.Commit) *indexer.Commit {
 	}
 }
 
+func index(idx *indexer.Indexer) error {
+	if err := idx.IndexBlobs("blob"); err != nil {
+		return err
+	}
+
+	if err := idx.IndexCommits(); err != nil {
+		return err
+	}
+
+	if err := idx.Flush(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func TestIndex(t *testing.T) {
 	idx, repo, submit := setupIndexer()
 
@@ -185,7 +201,7 @@ func TestIndex(t *testing.T) {
 	join_data_blob := map[string]string{"name": "blob", "parent": "project_" + parentID}
 	join_data_commit := map[string]string{"name": "commit", "parent": "project_" + parentID}
 
-	idx.Index()
+	index(idx)
 
 	assert.Equal(t, submit.indexed, 3)
 	assert.Equal(t, submit.removed, 1)
@@ -214,7 +230,7 @@ func TestErrorIndexingSkipsRemainder(t *testing.T) {
 
 	repo.added = append(repo.added, gitBreakingFile, gitOKFile)
 
-	err := idx.Index()
+	err := index(idx)
 
 	assert.Error(t, err)
 	assert.Equal(t, submit.indexed, 0)

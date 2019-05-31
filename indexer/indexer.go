@@ -21,7 +21,7 @@ type Indexer struct {
 	Submitter
 }
 
-func (i *Indexer) SubmitCommit(c *git.Commit) error {
+func (i *Indexer) submitCommit(c *git.Commit) error {
 	commit := BuildCommit(c, i.Submitter.ParentID())
 
 	joinData := map[string]string{
@@ -32,8 +32,8 @@ func (i *Indexer) SubmitCommit(c *git.Commit) error {
 	return nil
 }
 
-func (i *Indexer) SubmitBlob(f *git.File, _, toCommit string) error {
-	blob, err := BuildBlob(f, i.Submitter.ParentID(), toCommit)
+func (i *Indexer) submitRepoBlob(f *git.File, _, toCommit string) error {
+	blob, err := BuildBlob(f, i.Submitter.ParentID(), toCommit, "blob")
 	if err != nil {
 		if isSkipBlobErr(err) {
 			return nil
@@ -50,38 +50,61 @@ func (i *Indexer) SubmitBlob(f *git.File, _, toCommit string) error {
 	return nil
 }
 
-func (i *Indexer) RemoveBlob(file *git.File, _, _ string) error {
+func (i *Indexer) submitWikiBlob(f *git.File, _, toCommit string) error {
+	wikiBlob, err := BuildBlob(f, i.Submitter.ParentID(), toCommit, "wiki_blob")
+	if err != nil {
+		if isSkipBlobErr(err) {
+			return nil
+		}
+
+		return fmt.Errorf("WikiBlob %s: %s", f.Path, err)
+	}
+
+	joinData := map[string]string{
+		"name":   "wiki_blob",
+		"parent": "project_" + i.Submitter.ParentID()}
+
+	i.Submitter.Index(wikiBlob.ID, map[string]interface{}{"blob": wikiBlob, "type": "wiki_blob", "join_field": joinData})
+	return nil
+}
+
+func (i *Indexer) removeBlob(file *git.File, _, _ string) error {
 	blobID := GenerateBlobID(i.Submitter.ParentID(), file.Path)
 
 	i.Submitter.Remove(blobID)
 	return nil
 }
 
-func (i *Indexer) IndexCommits() error {
-	return i.Repository.EachCommit(i.SubmitCommit)
+func (i *Indexer) indexCommits() error {
+	return i.Repository.EachCommit(i.submitCommit)
 }
 
-func (i *Indexer) IndexBlobs() error {
-	return i.Repository.EachFileChange(i.SubmitBlob, i.SubmitBlob, i.RemoveBlob)
+func (i *Indexer) indexRepoBlobs() error {
+	return i.Repository.EachFileChange(i.submitRepoBlob, i.submitRepoBlob, i.removeBlob)
+}
+
+func (i *Indexer) indexWikiBlobs() error {
+	return i.Repository.EachFileChange(i.submitWikiBlob, i.submitWikiBlob, i.removeBlob)
 }
 
 func (i *Indexer) Flush() error {
 	return i.Submitter.Flush()
 }
 
-func (i *Indexer) Index() error {
-	if err := i.IndexBlobs(); err != nil {
-		log.Print("Error while indexing blobs: ", err)
-		return err
+func (i *Indexer) IndexBlobs(blobType string) error {
+	switch blobType {
+	case "blob":
+		return i.indexRepoBlobs()
+	case "wiki_blob":
+		return i.indexWikiBlobs()
 	}
 
-	if err := i.IndexCommits(); err != nil {
+	return fmt.Errorf("Unknown blob type: %v", blobType)
+}
+
+func (i *Indexer) IndexCommits() error {
+	if err := i.indexCommits(); err != nil {
 		log.Print("Error while indexing commits: ", err)
-		return err
-	}
-
-	if err := i.Submitter.Flush(); err != nil {
-		log.Print("Error while flushing requests: ", err)
 		return err
 	}
 

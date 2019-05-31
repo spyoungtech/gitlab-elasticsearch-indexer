@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -108,11 +107,12 @@ func buildIndex(t *testing.T, working bool) (*elastic.Client, func()) {
 	}
 }
 
-func run(from, to string) (error, string, string) {
+func run(from, to string, args ...string) (error, string, string) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	cmd := exec.Command(*binary, projectID, testRepo)
+	arguments := append(args, projectID, testRepo)
+	cmd := exec.Command(*binary, arguments...)
 	cmd.Env = os.Environ()
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
@@ -294,4 +294,48 @@ func TestIndexingGitlabTest(t *testing.T) {
 
 	require.Equal(t, expectedDate, cDoc.Commit.Author.Time)
 	require.Equal(t, expectedDate, cDoc.Commit.Committer.Time)
+}
+
+func TestIndexingWikiBlobs(t *testing.T) {
+	checkDeps(t)
+	ensureGitalyRepository(t)
+	c, td := buildWorkingIndex(t)
+	defer td()
+
+	err, _, _ := run("", headSHA, "--blob-type=wiki_blob", "--skip-commits")
+	require.NoError(t, err)
+
+	// Check that commits were not indexed
+	commit, err := c.GetCommit(headSHA)
+	require.Error(t, err)
+	require.Empty(t, commit)
+
+	// Check that blobs are indexed
+	blob, err := c.GetBlob("README.md")
+	require.NoError(t, err)
+	require.True(t, blob.Found)
+	require.Equal(t, "doc", blob.Type)
+	require.Equal(t, projectID+"_README.md", blob.Id)
+	require.Equal(t, "project_"+projectID, blob.Routing)
+
+	data := make(map[string]interface{})
+	require.NoError(t, json.Unmarshal(*blob.Source, &data))
+
+	blobDoc, ok := data["blob"]
+	require.True(t, ok)
+	require.Equal(
+		t,
+		map[string]interface{}{
+			"type":       "wiki_blob",
+			"language":   "Markdown",
+			"path":       "README.md",
+			"file_name":  "README.md",
+			"oid":        "faaf198af3a36dbf41961466703cc1d47c61d051",
+			"rid":        fmt.Sprintf("wiki_%s", projectID),
+			"commit_sha": headSHA,
+			"content":    "testme\n======\n\nSample repo for testing gitlab features\n",
+		},
+		blobDoc,
+	)
+
 }

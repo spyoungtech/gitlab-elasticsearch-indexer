@@ -1,10 +1,12 @@
 package main_test
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"testing"
@@ -80,25 +82,40 @@ func checkDeps(t *testing.T) {
 	}
 }
 
-func buildIndex(t *testing.T) (*elastic.Client, func()) {
+func buildWorkingIndex(t *testing.T) (*elastic.Client, func()) {
+	return buildIndex(t, true)
+}
+
+func buildBrokenIndex(t *testing.T) (*elastic.Client, func()) {
+	return buildIndex(t, false)
+}
+
+func buildIndex(t *testing.T, working bool) (*elastic.Client, func()) {
 	railsEnv := fmt.Sprintf("test-integration-%d", time.Now().Unix())
 	os.Setenv("RAILS_ENV", railsEnv)
 
 	client, err := elastic.FromEnv(projectID)
 	require.NoError(t, err)
 
-	require.NoError(t, client.CreateIndex())
+	if working {
+		require.NoError(t, client.CreateWorkingIndex())
+	} else {
+		require.NoError(t, client.CreateBrokenIndex())
+	}
 
 	return client, func() {
 		client.DeleteIndex()
 	}
 }
 
-func run(from, to string) error {
+func run(from, to string) (error, string, string) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+
 	cmd := exec.Command(*binary, projectID, testRepo)
 	cmd.Env = os.Environ()
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
 
 	// GitLab always sets FROM_SHA
 	if from == "" {
@@ -111,22 +128,27 @@ func run(from, to string) error {
 		cmd.Env = append(cmd.Env, "TO_SHA="+to)
 	}
 
-	return cmd.Run()
+	err := cmd.Run()
+
+	return err, stdout.String(), stderr.String()
 }
 
 func TestIndexingRemovesFiles(t *testing.T) {
 	checkDeps(t)
 	ensureGitalyRepository(t)
-	c, td := buildIndex(t)
+	c, td := buildWorkingIndex(t)
+
 	defer td()
 
 	// The commit before files/empty is removed - so it should be indexed
-	require.NoError(t, run("", "19e2e9b4ef76b422ce1154af39a91323ccc57434"))
-	_, err := c.GetBlob("files/empty")
+	err, _, _ := run("", "19e2e9b4ef76b422ce1154af39a91323ccc57434")
+	require.NoError(t, err)
+	_, err = c.GetBlob("files/empty")
 	require.NoError(t, err)
 
 	// Now we expect it to have been removed
-	require.NoError(t, run("19e2e9b4ef76b422ce1154af39a91323ccc57434", "08f22f255f082689c0d7d39d19205085311542bc"))
+	err, _, _ = run("19e2e9b4ef76b422ce1154af39a91323ccc57434", "08f22f255f082689c0d7d39d19205085311542bc")
+	require.NoError(t, err)
 	_, err = c.GetBlob("files/empty")
 	require.Error(t, err)
 }
@@ -142,10 +164,11 @@ type document struct {
 func TestIndexingTranscodesToUTF8(t *testing.T) {
 	checkDeps(t)
 	ensureGitalyRepository(t)
-	c, td := buildIndex(t)
+	c, td := buildWorkingIndex(t)
 	defer td()
 
-	require.NoError(t, run("", headSHA))
+	err, _, _ := run("", headSHA)
+	require.NoError(t, err)
 
 	for _, tc := range []struct {
 		name     string
@@ -167,13 +190,26 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 	}
 }
 
+func TestElasticClientIndexMismatch(t *testing.T) {
+	checkDeps(t)
+	ensureGitalyRepository(t)
+	_, td := buildBrokenIndex(t)
+	defer td()
+
+	err, _, stderr := run("", headSHA)
+
+	require.Error(t, err)
+	require.Regexp(t, `bulk request \d: failed to insert \d/\d documents`, stderr)
+}
+
 func TestIndexingGitlabTest(t *testing.T) {
 	checkDeps(t)
 	ensureGitalyRepository(t)
-	c, td := buildIndex(t)
+	c, td := buildWorkingIndex(t)
 	defer td()
 
-	require.NoError(t, run("", headSHA))
+	err, _, _ := run("", headSHA)
+	require.NoError(t, err)
 
 	// Check the indexing of a commit
 	commit, err := c.GetCommit(headSHA)

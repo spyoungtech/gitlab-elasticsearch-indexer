@@ -1,5 +1,9 @@
 # GitLab Elasticsearch Indexer
 
+## v1.2.0
+
+- Output error on BulkProcessor error callback !28
+
 ## v1.1.0
 
 - Fix indexing repos when there is no HEAD !21

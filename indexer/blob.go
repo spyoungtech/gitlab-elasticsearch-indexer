@@ -57,7 +57,7 @@ func GenerateBlobID(parentID, filename string) string {
 	return fmt.Sprintf("%s_%s", parentID, filename)
 }
 
-func BuildBlob(file *git.File, parentID, commitSHA string) (*Blob, error) {
+func BuildBlob(file *git.File, parentID, commitSHA string, blobType string) (*Blob, error) {
 	if file.Size > git.LimitFileSize {
 		return nil, SkipTooLargeBlob
 	}
@@ -82,18 +82,26 @@ func BuildBlob(file *git.File, parentID, commitSHA string) (*Blob, error) {
 
 	content := tryEncodeBytes(b)
 	filename := tryEncodeString(file.Path)
-
-	return &Blob{
-		Type:      "blob",
+	blob := &Blob{
 		ID:        GenerateBlobID(parentID, filename),
 		OID:       file.Oid,
-		RepoID:    parentID,
 		CommitSHA: commitSHA,
 		Content:   content,
 		Path:      filename,
 		Filename:  filename,
 		Language:  DetectLanguage(filename, b),
-	}, nil
+	}
+
+	switch blobType {
+	case "blob":
+		blob.Type = "blob"
+		blob.RepoID = parentID
+	case "wiki_blob":
+		blob.Type = "wiki_blob"
+		blob.RepoID = fmt.Sprintf("wiki_%s", parentID)
+	}
+
+	return blob, nil
 }
 
 // DetectLanguage returns a string describing the language of the file. This is

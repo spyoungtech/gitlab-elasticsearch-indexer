@@ -59,6 +59,11 @@ Before running tests, set configuration variables`
 export GITALY_CONNECTION_INFO='{"address": "tcp://localhost:8075", "storage": "default"}'
 export ELASTIC_CONNECTION_INFO='{"url":["http://localhost:9200"]}'
 ```
+**Note**: If using a socket, please pass your URI in the form `unix://FULL_PATH_WITH_LEADING_SLASH`
+Example:
+```
+export GITALY_CONNECTION_INFO='{"address": "unix:///gitlab/gdk/gitaly.socket", "storage": "default"}'
+```
 
 to run some specific test, run
 

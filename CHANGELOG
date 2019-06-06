@@ -3,6 +3,7 @@
 ## v1.2.0
 
 - Output error on BulkProcessor error callback !28
+- Add ability to index wiki blobs !30
 
 ## v1.1.0
 

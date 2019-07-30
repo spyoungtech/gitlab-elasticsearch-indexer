@@ -218,7 +218,7 @@ func TestIndexingTranscodesToUTF8(t *testing.T) {
 			require.NoError(t, err)
 
 			blobDoc := &document{}
-			require.NoError(t, json.Unmarshal(*blob.Source, &blobDoc))
+			require.NoError(t, json.Unmarshal(blob.Source, &blobDoc))
 
 			require.Equal(t, tc.expected, blobDoc.Blob.Content)
 		})
@@ -255,7 +255,7 @@ func TestIndexingGitlabTest(t *testing.T) {
 	require.Equal(t, "project_"+projectIDString, commit.Routing)
 
 	data := make(map[string]interface{})
-	require.NoError(t, json.Unmarshal(*commit.Source, &data))
+	require.NoError(t, json.Unmarshal(commit.Source, &data))
 
 	commitDoc, ok := data["commit"]
 	require.True(t, ok)
@@ -293,7 +293,7 @@ func TestIndexingGitlabTest(t *testing.T) {
 	require.Equal(t, "project_"+projectIDString, blob.Routing)
 
 	data = make(map[string]interface{})
-	require.NoError(t, json.Unmarshal(*blob.Source, &data))
+	require.NoError(t, json.Unmarshal(blob.Source, &data))
 
 	blobDoc, ok := data["blob"]
 	require.True(t, ok)
@@ -321,7 +321,7 @@ func TestIndexingGitlabTest(t *testing.T) {
 	require.NoError(t, err)
 
 	cDoc := &document{}
-	require.NoError(t, json.Unmarshal(*commit.Source, &cDoc))
+	require.NoError(t, json.Unmarshal(commit.Source, &cDoc))
 
 	date, err = time.Parse("20060102T150405-0700", "20160921T181326+0300")
 	require.NoError(t, err)
@@ -354,7 +354,7 @@ func TestIndexingWikiBlobs(t *testing.T) {
 	require.Equal(t, "project_"+projectIDString, blob.Routing)
 
 	data := make(map[string]interface{})
-	require.NoError(t, json.Unmarshal(*blob.Source, &data))
+	require.NoError(t, json.Unmarshal(blob.Source, &data))
 
 	blobDoc, ok := data["blob"]
 	require.True(t, ok)

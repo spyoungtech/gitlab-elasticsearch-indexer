@@ -1,5 +1,9 @@
 # GitLab Elasticsearch Indexer
 
+## v1.3.0
+
+- Include project_id when indexing blob !36
+
 ## v1.2.0
 
 - Output error on BulkProcessor error callback !28

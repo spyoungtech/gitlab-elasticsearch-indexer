@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"strconv"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/linguist"
@@ -53,11 +54,11 @@ type Blob struct {
 	Language string `json:"language"`
 }
 
-func GenerateBlobID(parentID, filename string) string {
-	return fmt.Sprintf("%s_%s", parentID, filename)
+func GenerateBlobID(parentID int64, filename string) string {
+	return fmt.Sprintf("%v_%s", parentID, filename)
 }
 
-func BuildBlob(file *git.File, parentID, commitSHA string, blobType string) (*Blob, error) {
+func BuildBlob(file *git.File, parentID int64, commitSHA string, blobType string) (*Blob, error) {
 	if file.Size > git.LimitFileSize {
 		return nil, SkipTooLargeBlob
 	}
@@ -95,10 +96,10 @@ func BuildBlob(file *git.File, parentID, commitSHA string, blobType string) (*Bl
 	switch blobType {
 	case "blob":
 		blob.Type = "blob"
-		blob.RepoID = parentID
+		blob.RepoID = strconv.FormatInt(parentID, 10)
 	case "wiki_blob":
 		blob.Type = "wiki_blob"
-		blob.RepoID = fmt.Sprintf("wiki_%s", parentID)
+		blob.RepoID = fmt.Sprintf("wiki_%d", parentID)
 	}
 
 	return blob, nil

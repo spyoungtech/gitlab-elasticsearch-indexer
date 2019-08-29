@@ -13,7 +13,7 @@ func TestBuildBlob(t *testing.T) {
 	file := gitFile("foo/bar", "foo")
 	expected := validBlob(file, "foo", "Text")
 
-	actual, err := indexer.BuildBlob(file, expected.RepoID, expected.CommitSHA, "blob")
+	actual, err := indexer.BuildBlob(file, parentID, expected.CommitSHA, "blob")
 	assert.NoError(t, err)
 
 	assert.Equal(t, expected, actual)
@@ -68,5 +68,5 @@ func TestBuildBlobDetectsLanguageByExtension(t *testing.T) {
 }
 
 func TestGenerateBlobID(t *testing.T) {
-	assert.Equal(t, "projectID_path", indexer.GenerateBlobID("projectID", "path"))
+	assert.Equal(t, "2147483648_path", indexer.GenerateBlobID(2147483648, "path"))
 }

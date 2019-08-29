@@ -8,7 +8,7 @@ import (
 )
 
 type Submitter interface {
-	ParentID() string
+	ParentID() int64
 
 	Index(id string, thing interface{})
 	Remove(id string)
@@ -26,7 +26,7 @@ func (i *Indexer) submitCommit(c *git.Commit) error {
 
 	joinData := map[string]string{
 		"name":   "commit",
-		"parent": "project_" + i.Submitter.ParentID()}
+		"parent": fmt.Sprintf("project_%v", i.Submitter.ParentID())}
 
 	i.Submitter.Index(commit.ID, map[string]interface{}{"commit": commit, "type": "commit", "join_field": joinData})
 	return nil
@@ -44,9 +44,9 @@ func (i *Indexer) submitRepoBlob(f *git.File, _, toCommit string) error {
 
 	joinData := map[string]string{
 		"name":   "blob",
-		"parent": "project_" + i.Submitter.ParentID()}
+		"parent": fmt.Sprintf("project_%v", i.Submitter.ParentID())}
 
-	i.Submitter.Index(blob.ID, map[string]interface{}{"blob": blob, "type": "blob", "join_field": joinData})
+	i.Submitter.Index(blob.ID, map[string]interface{}{"project_id": i.Submitter.ParentID(), "blob": blob, "type": "blob", "join_field": joinData})
 	return nil
 }
 
@@ -62,9 +62,9 @@ func (i *Indexer) submitWikiBlob(f *git.File, _, toCommit string) error {
 
 	joinData := map[string]string{
 		"name":   "wiki_blob",
-		"parent": "project_" + i.Submitter.ParentID()}
+		"parent": fmt.Sprintf("project_%v", i.Submitter.ParentID())}
 
-	i.Submitter.Index(wikiBlob.ID, map[string]interface{}{"blob": wikiBlob, "type": "wiki_blob", "join_field": joinData})
+	i.Submitter.Index(wikiBlob.ID, map[string]interface{}{"project_id": i.Submitter.ParentID(), "blob": wikiBlob, "type": "wiki_blob", "join_field": joinData})
 	return nil
 }
 

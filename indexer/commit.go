@@ -2,6 +2,7 @@ package indexer
 
 import (
 	"fmt"
+	"strconv"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
 )
@@ -16,11 +17,11 @@ type Commit struct {
 	SHA       string  `json:"sha"`
 }
 
-func GenerateCommitID(parentID, commitSHA string) string {
-	return fmt.Sprintf("%s_%s", parentID, commitSHA)
+func GenerateCommitID(parentID int64, commitSHA string) string {
+	return fmt.Sprintf("%v_%s", parentID, commitSHA)
 }
 
-func BuildCommit(c *git.Commit, parentID string) *Commit {
+func BuildCommit(c *git.Commit, parentID int64) *Commit {
 	sha := c.Hash
 
 	return &Commit{
@@ -28,7 +29,7 @@ func BuildCommit(c *git.Commit, parentID string) *Commit {
 		Author:    BuildPerson(c.Author),
 		Committer: BuildPerson(c.Committer),
 		ID:        GenerateCommitID(parentID, sha),
-		RepoID:    parentID,
+		RepoID:    strconv.FormatInt(parentID, 10),
 		Message:   tryEncodeString(c.Message),
 		SHA:       sha,
 	}

@@ -32,7 +32,7 @@ const (
 
 type Client struct {
 	IndexName  string
-	ProjectID  string
+	ProjectID  int64
 	Client     *elastic.Client
 	bulk       *elastic.BulkProcessor
 	bulkFailed bool
@@ -40,7 +40,7 @@ type Client struct {
 
 // FromEnv creates an Elasticsearch client from the `ELASTIC_CONNECTION_INFO`
 // environment variable
-func FromEnv(projectID string) (*Client, error) {
+func FromEnv(projectID int64) (*Client, error) {
 	data := strings.NewReader(os.Getenv("ELASTIC_CONNECTION_INFO"))
 
 	config, err := ReadConfig(data)
@@ -154,7 +154,7 @@ func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.
 	return creds
 }
 
-func (c *Client) ParentID() string {
+func (c *Client) ParentID() int64 {
 	return c.ProjectID
 }
 
@@ -176,7 +176,7 @@ func (c *Client) Index(id string, thing interface{}) {
 	req := elastic.NewBulkIndexRequest().
 		Index(c.IndexName).
 		Type("doc").
-		Routing("project_" + c.ProjectID).
+		Routing(fmt.Sprintf("project_%v", c.ProjectID)).
 		Id(id).
 		Doc(thing)
 
@@ -188,24 +188,24 @@ func (c *Client) Get(id string) (*elastic.GetResult, error) {
 	return c.Client.Get().
 		Index(c.IndexName).
 		Type("doc").
-		Routing("project_" + c.ProjectID).
+		Routing(fmt.Sprintf("project_%v", c.ProjectID)).
 		Id(id).
 		Do(context.TODO())
 }
 
 func (c *Client) GetCommit(id string) (*elastic.GetResult, error) {
-	return c.Get(c.ProjectID + "_" + id)
+	return c.Get(fmt.Sprintf("%v_%v", c.ProjectID, id))
 }
 
 func (c *Client) GetBlob(path string) (*elastic.GetResult, error) {
-	return c.Get(c.ProjectID + "_" + path)
+	return c.Get(fmt.Sprintf("%v_%v", c.ProjectID, path))
 }
 
 func (c *Client) Remove(id string) {
 	req := elastic.NewBulkDeleteRequest().
 		Index(c.IndexName).
 		Type("doc").
-		Routing("project_" + c.ProjectID).
+		Routing(fmt.Sprintf("project_%v", c.ProjectID)).
 		Id(id)
 
 	c.bulk.Add(req)

@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	projectID = "667"
+	projectID       = int64(667)
+	projectIDString = "667"
 )
 
 const credsRespTmpl = `{
@@ -126,6 +127,7 @@ func TestAWSConfiguration(t *testing.T) {
 		}`,
 	))
 	assert.NoError(t, err)
+	config.ProjectID = 633
 
 	client, err := elastic.NewClient(config)
 	assert.NoError(t, err)
@@ -155,10 +157,10 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	assert.NoError(t, client.CreateWorkingIndex())
 
 	blobDoc := map[string]interface{}{}
-	client.Index(projectID+"_foo", blobDoc)
+	client.Index(projectIDString+"_foo", blobDoc)
 
 	commitDoc := map[string]interface{}{}
-	client.Index(projectID+"_0000", commitDoc)
+	client.Index(projectIDString+"_0000", commitDoc)
 
 	assert.NoError(t, client.Flush())
 
@@ -170,7 +172,7 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, true, commit.Found)
 
-	client.Remove(projectID + "_foo")
+	client.Remove(projectIDString + "_foo")
 	assert.NoError(t, client.Flush())
 
 	_, err = client.GetBlob("foo")

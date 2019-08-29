@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strconv"
 
 	log "github.com/sirupsen/logrus"
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
@@ -35,7 +36,12 @@ func main() {
 		log.Fatalf("Usage: %s [ --version | [--blob-type=(blob|wiki_blob)] [--skip-comits] <project-id> <project-path> ]", os.Args[0])
 	}
 
-	projectID := args[0]
+	projectID, err := strconv.ParseInt(args[0], 10, 64)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	projectPath := args[1]
 	fromSHA := os.Getenv("FROM_SHA")
 	toSHA := os.Getenv("TO_SHA")
@@ -58,7 +64,7 @@ func main() {
 	}
 
 	log.Debugf("Indexing from %s to %s", repo.FromHash, repo.ToHash)
-	log.Debugf("Index: %s, Project ID: %s, blob_type: %s, skip_commits?: %t", esClient.IndexName, esClient.ParentID(), blobType, skipCommits)
+	log.Debugf("Index: %s, Project ID: %v, blob_type: %s, skip_commits?: %t", esClient.IndexName, esClient.ParentID(), blobType, skipCommits)
 
 	if err := idx.IndexBlobs(blobType); err != nil {
 		log.Fatalln("Indexing error: ", err)

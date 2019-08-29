@@ -7,7 +7,7 @@ import (
 
 type Config struct {
 	IndexName string   `json:"-"`
-	ProjectID string   `json:"-"`
+	ProjectID int64    `json:"-"`
 	URL       []string `json:"url"`
 	AWS       bool     `json:"aws"`
 	Region    string   `json:"aws_region"`

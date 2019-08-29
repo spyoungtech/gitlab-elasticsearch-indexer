@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	sha      = "9876543210987654321098765432109876543210"
-	oid      = "0123456789012345678901234567890123456789"
-	parentID = "667"
+	sha            = "9876543210987654321098765432109876543210"
+	oid            = "0123456789012345678901234567890123456789"
+	parentID       = int64(667)
+	parentIDString = "667"
 )
 
 type fakeSubmitter struct {
@@ -39,7 +40,7 @@ type fakeRepository struct {
 	removed  []*git.File
 }
 
-func (f *fakeSubmitter) ParentID() string {
+func (f *fakeSubmitter) ParentID() int64 {
 	return parentID
 }
 
@@ -138,7 +139,7 @@ func validBlob(file *git.File, content, language string) *indexer.Blob {
 		Type:      "blob",
 		ID:        indexer.GenerateBlobID(parentID, file.Path),
 		OID:       oid,
-		RepoID:    parentID,
+		RepoID:    parentIDString,
 		CommitSHA: sha,
 		Content:   content,
 		Path:      file.Path,
@@ -153,7 +154,7 @@ func validCommit(gitCommit *git.Commit) *indexer.Commit {
 		ID:        indexer.GenerateCommitID(parentID, gitCommit.Hash),
 		Author:    indexer.BuildPerson(gitCommit.Author),
 		Committer: indexer.BuildPerson(gitCommit.Committer),
-		RepoID:    parentID,
+		RepoID:    parentIDString,
 		Message:   gitCommit.Message,
 		SHA:       sha,
 	}
@@ -198,24 +199,24 @@ func TestIndex(t *testing.T) {
 	repo.modified = append(repo.modified, gitModified)
 	repo.removed = append(repo.removed, gitRemoved)
 
-	join_data_blob := map[string]string{"name": "blob", "parent": "project_" + parentID}
-	join_data_commit := map[string]string{"name": "commit", "parent": "project_" + parentID}
+	join_data_blob := map[string]string{"name": "blob", "parent": "project_" + parentIDString}
+	join_data_commit := map[string]string{"name": "commit", "parent": "project_" + parentIDString}
 
 	index(idx)
 
 	assert.Equal(t, submit.indexed, 3)
 	assert.Equal(t, submit.removed, 1)
 
-	assert.Equal(t, parentID+"_"+added.Path, submit.indexedID[0])
-	assert.Equal(t, map[string]interface{}{"blob": added, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[0])
+	assert.Equal(t, parentIDString+"_"+added.Path, submit.indexedID[0])
+	assert.Equal(t, map[string]interface{}{"project_id": parentID, "blob": added, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[0])
 
-	assert.Equal(t, parentID+"_"+modified.Path, submit.indexedID[1])
-	assert.Equal(t, map[string]interface{}{"blob": modified, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[1])
+	assert.Equal(t, parentIDString+"_"+modified.Path, submit.indexedID[1])
+	assert.Equal(t, map[string]interface{}{"project_id": parentID, "blob": modified, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[1])
 
-	assert.Equal(t, parentID+"_"+commit.SHA, submit.indexedID[2])
+	assert.Equal(t, parentIDString+"_"+commit.SHA, submit.indexedID[2])
 	assert.Equal(t, map[string]interface{}{"commit": commit, "join_field": join_data_commit, "type": "commit"}, submit.indexedThing[2])
 
-	assert.Equal(t, parentID+"_"+removed.Path, submit.removedID[0])
+	assert.Equal(t, parentIDString+"_"+removed.Path, submit.removedID[0])
 
 	assert.Equal(t, submit.flushed, 1)
 }

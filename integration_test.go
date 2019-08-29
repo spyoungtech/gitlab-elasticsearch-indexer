@@ -25,7 +25,8 @@ var (
 )
 
 const (
-	projectID         = "667"
+	projectID         = 667
+	projectIDString   = "667"
 	headSHA           = "b83d6e391c22777fca1ed3012fce84f633d7fed0"
 	testRepo          = "test-gitlab-elasticsearch-indexer/gitlab-test.git"
 	testRepoPath      = "https://gitlab.com/gitlab-org/gitlab-test.git"
@@ -111,7 +112,7 @@ func run(from, to string, args ...string) (error, string, string) {
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 
-	arguments := append(args, projectID, testRepo)
+	arguments := append(args, projectIDString, testRepo)
 	cmd := exec.Command(*binary, arguments...)
 	cmd.Env = os.Environ()
 	cmd.Stdout = &stdout
@@ -216,8 +217,8 @@ func TestIndexingGitlabTest(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, commit.Found)
 	require.Equal(t, "doc", commit.Type)
-	require.Equal(t, projectID+"_"+headSHA, commit.Id)
-	require.Equal(t, "project_"+projectID, commit.Routing)
+	require.Equal(t, projectIDString+"_"+headSHA, commit.Id)
+	require.Equal(t, "project_"+projectIDString, commit.Routing)
 
 	data := make(map[string]interface{})
 	require.NoError(t, json.Unmarshal(*commit.Source, &data))
@@ -243,7 +244,7 @@ func TestIndexingGitlabTest(t *testing.T) {
 				"name":  "Job van der Voort",
 				"time":  date.Local().Format("20060102T150405-0700"),
 			},
-			"rid":     projectID,
+			"rid":     projectIDString,
 			"message": "Merge branch 'branch-merged' into 'master'\r\n\r\nadds bar folder and branch-test text file to check Repository merged_to_root_ref method\r\n\r\n\r\n\r\nSee merge request !12",
 		},
 		commitDoc,
@@ -254,8 +255,8 @@ func TestIndexingGitlabTest(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, blob.Found)
 	require.Equal(t, "doc", blob.Type)
-	require.Equal(t, projectID+"_README.md", blob.Id)
-	require.Equal(t, "project_"+projectID, blob.Routing)
+	require.Equal(t, projectIDString+"_README.md", blob.Id)
+	require.Equal(t, "project_"+projectIDString, blob.Routing)
 
 	data = make(map[string]interface{})
 	require.NoError(t, json.Unmarshal(*blob.Source, &data))
@@ -270,7 +271,7 @@ func TestIndexingGitlabTest(t *testing.T) {
 			"path":       "README.md",
 			"file_name":  "README.md",
 			"oid":        "faaf198af3a36dbf41961466703cc1d47c61d051",
-			"rid":        projectID,
+			"rid":        projectIDString,
 			"commit_sha": headSHA,
 			"content":    "testme\n======\n\nSample repo for testing gitlab features\n",
 		},
@@ -315,8 +316,8 @@ func TestIndexingWikiBlobs(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, blob.Found)
 	require.Equal(t, "doc", blob.Type)
-	require.Equal(t, projectID+"_README.md", blob.Id)
-	require.Equal(t, "project_"+projectID, blob.Routing)
+	require.Equal(t, projectIDString+"_README.md", blob.Id)
+	require.Equal(t, "project_"+projectIDString, blob.Routing)
 
 	data := make(map[string]interface{})
 	require.NoError(t, json.Unmarshal(*blob.Source, &data))
@@ -331,7 +332,7 @@ func TestIndexingWikiBlobs(t *testing.T) {
 			"path":       "README.md",
 			"file_name":  "README.md",
 			"oid":        "faaf198af3a36dbf41961466703cc1d47c61d051",
-			"rid":        fmt.Sprintf("wiki_%s", projectID),
+			"rid":        fmt.Sprintf("wiki_%s", projectIDString),
 			"commit_sha": headSHA,
 			"content":    "testme\n======\n\nSample repo for testing gitlab features\n",
 		},

@@ -13,7 +13,7 @@ func TestBuildCommit(t *testing.T) {
 	gitCommit := gitCommit("Initial commit")
 
 	expected := validCommit(gitCommit)
-	actual := indexer.BuildCommit(gitCommit, expected.RepoID)
+	actual := indexer.BuildCommit(gitCommit, parentID)
 
 	assert.Equal(t, expected, actual)
 
@@ -40,5 +40,5 @@ func TestBuildCommit(t *testing.T) {
 }
 
 func TestGenerateCommitID(t *testing.T) {
-	assert.Equal(t, "projectID_sha", indexer.GenerateCommitID("projectID", "sha"))
+	assert.Equal(t, "2147483648_sha", indexer.GenerateCommitID(2147483648, "sha"))
 }

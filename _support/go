@@ -1,0 +1,11 @@
+#!/bin/sh
+set -e
+
+case x$(uname) in
+xDarwin)
+  # In case this is macOS with homebrew, point the way to homebrew's icu4c
+  export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:/usr/local/opt/icu4c/lib/pkgconfig
+  ;;
+esac
+
+go "$@"

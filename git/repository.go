@@ -26,7 +26,7 @@ type Commit struct {
 }
 
 type Repository interface {
-	EachFileChange(ins, mod, del FileFunc) error
+	EachFileChange(ins, del FileFunc) error
 	EachCommit(f CommitFunc) error
 }
 

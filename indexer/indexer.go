@@ -80,11 +80,11 @@ func (i *Indexer) indexCommits() error {
 }
 
 func (i *Indexer) indexRepoBlobs() error {
-	return i.Repository.EachFileChange(i.submitRepoBlob, i.submitRepoBlob, i.removeBlob)
+	return i.Repository.EachFileChange(i.submitRepoBlob, i.removeBlob)
 }
 
 func (i *Indexer) indexWikiBlobs() error {
-	return i.Repository.EachFileChange(i.submitWikiBlob, i.submitWikiBlob, i.removeBlob)
+	return i.Repository.EachFileChange(i.submitWikiBlob, i.removeBlob)
 }
 
 func (i *Indexer) Flush() error {

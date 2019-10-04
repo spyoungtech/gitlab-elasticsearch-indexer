@@ -235,29 +235,35 @@ func TestEmptyToSHADefaultsToHeadSHA(t *testing.T) {
 	assert.Equal(t, []string{headSHA}, commitHashes)
 }
 
-// TODO: store the ins/mod/del status of each change
-func runEachFileChange(repo git.Repository) (map[string]*git.File, []string, error) {
-	files := make(map[string]*git.File)
+func runEachFileChange(repo git.Repository) (map[string]*git.File, map[string]*git.File, []string, error) {
+	putFiles := make(map[string]*git.File)
+	delFiles := make(map[string]*git.File)
 	filePaths := []string{}
 
-	store := func(f *git.File, _, _ string) error {
-		files[f.Path] = f
+	putStore := func(f *git.File, _, _ string) error {
+		putFiles[f.Path] = f
 		filePaths = append(filePaths, f.Path)
 		return nil
 	}
 
-	err := repo.EachFileChange(store, store, store)
-	return files, filePaths, err
+	delStore := func(f *git.File, _, _ string) error {
+		delFiles[f.Path] = f
+		filePaths = append(filePaths, f.Path)
+		return nil
+	}
+
+	err := repo.EachFileChange(putStore, delStore)
+	return putFiles, delFiles, filePaths, err
 }
 
-func TestEachFileChangeMod(t *testing.T) {
+func TestEachFileChangeAllModifications(t *testing.T) {
 	checkDeps(t)
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "", headSHA)
 	assert.NoError(t, err)
 
-	files, filePaths, err := runEachFileChange(repo)
+	putFiles, _, filePaths, err := runEachFileChange(repo)
 	assert.NoError(t, err)
 
 	expectedFiles := []string{
@@ -308,7 +314,7 @@ func TestEachFileChangeMod(t *testing.T) {
 	assert.Equal(t, expectedFiles, filePaths)
 
 	// Now choose one file and check it in detail
-	file := files["VERSION"]
+	file := putFiles["VERSION"]
 	blob, err := file.Blob()
 	assert.NoError(t, err)
 	data, err := ioutil.ReadAll(blob)
@@ -327,7 +333,7 @@ func TestEachFileChangeGivenRangeOfThreeCommits(t *testing.T) {
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
 	assert.NoError(t, err)
 
-	_, filePaths, err := runEachFileChange(repo)
+	_, _, filePaths, err := runEachFileChange(repo)
 
 	assert.Equal(t, []string{"bar/branch-test.txt"}, filePaths)
 }
@@ -339,7 +345,7 @@ func TestEachFileChangeGivenRangeOfTwoCommits(t *testing.T) {
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
 	assert.NoError(t, err)
 
-	_, filePaths, err := runEachFileChange(repo)
+	_, _, filePaths, err := runEachFileChange(repo)
 
 	assert.Equal(t, []string{}, filePaths)
 }

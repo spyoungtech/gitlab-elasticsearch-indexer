@@ -163,7 +163,24 @@ func (gc *gitalyClient) EachFileChange(put, del FileFunc) error {
 				}
 				log.Debug("Indexing blob change: ", "DELETE", file.Path)
 				err = del(file, gc.FromHash, gc.ToHash)
-			case "RENAMED", "MODIFIED", "COPIED":
+			case "RENAMED":
+				oldFile, err := gc.gitalyBuildFile(change, string(change.OldPath), false)
+				if err != nil {
+					return err
+				}
+				log.Debug("Indexing blob change: ", "DELETE", oldFile.Path)
+				err = del(oldFile, gc.FromHash, gc.ToHash)
+				if err != nil {
+					return err
+				}
+
+				newFile, err := gc.gitalyBuildFile(change, string(change.NewPath), false)
+				if err != nil {
+					return err
+				}
+				log.Debug("Indexing blob change: ", "ADD", newFile.Path)
+				err = put(newFile, gc.FromHash, gc.ToHash)
+			case "MODIFIED", "COPIED":
 				file, err := gc.gitalyBuildFile(change, string(change.NewPath), false)
 				if err != nil {
 					return err

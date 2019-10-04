@@ -349,3 +349,16 @@ func TestEachFileChangeGivenRangeOfTwoCommits(t *testing.T) {
 
 	assert.Equal(t, []string{}, filePaths)
 }
+
+func TestEachFileChangeWithRename(t *testing.T) {
+	checkDeps(t)
+	require.NoError(t, ensureGitalyRepository(t))
+
+	repo, err := git.NewGitalyClientFromEnv(testRepo, "19e2e9b4ef76b422ce1154af39a91323ccc57434", "c347ca2e140aa667b968e51ed0ffe055501fe4f4")
+	assert.NoError(t, err)
+
+	putFiles, delFiles, _, err := runEachFileChange(repo)
+
+	assert.Contains(t, putFiles, "files/js/commit.coffee")
+	assert.Contains(t, delFiles, "files/js/commit.js.coffee")
+}

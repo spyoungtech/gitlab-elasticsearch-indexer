@@ -120,7 +120,7 @@ func (gc *gitalyClient) Close() {
 	gc.conn.Close()
 }
 
-func (gc *gitalyClient) EachFileChange(put, del FileFunc) error {
+func (gc *gitalyClient) EachFileChange(put PutFunc, del DelFunc) error {
 	request := &pb.GetRawChangesRequest{
 		Repository:   gc.repository,
 		FromRevision: gc.FromHash,
@@ -150,19 +150,16 @@ func (gc *gitalyClient) EachFileChange(put, del FileFunc) error {
 
 			switch change.Operation.String() {
 			case "DELETED", "RENAMED":
-				file, err := gc.gitalyBuildFile(change, string(change.OldPath), true)
-				if err != nil {
-					return err
-				}
-				log.Debug("Indexing blob change: ", "DELETE", file.Path)
-				if err = del(file, gc.FromHash, gc.ToHash); err != nil {
+				path := string(change.OldPath)
+				log.Debug("Indexing blob change: ", "DELETE", path)
+				if err = del(path); err != nil {
 					return err
 				}
 			}
 
 			switch change.Operation.String() {
 			case "ADDED", "RENAMED", "MODIFIED", "COPIED":
-				file, err := gc.gitalyBuildFile(change, string(change.NewPath), false)
+				file, err := gc.gitalyBuildFile(change, string(change.NewPath))
 				if err != nil {
 					return err
 				}
@@ -238,12 +235,12 @@ func (gc *gitalyClient) getBlob(oid string) (io.ReadCloser, error) {
 	return ioutil.NopCloser(data), nil
 }
 
-func (gc *gitalyClient) gitalyBuildFile(change *pb.GetRawChangesResponse_RawChange, path string, withoutBlobReader bool) (*File, error) {
+func (gc *gitalyClient) gitalyBuildFile(change *pb.GetRawChangesResponse_RawChange, path string) (*File, error) {
 	var data io.ReadCloser
 	// We limit the size to avoid loading too big blobs into memory
 	// as they will be rejected on the indexer side anyway
 	// Ideally, we need to create a lazy blob reader here.
-	if withoutBlobReader || change.Size > LimitFileSize {
+	if change.Size > LimitFileSize {
 		data = ioutil.NopCloser(new(bytes.Buffer))
 	} else {
 		var err error

@@ -45,6 +45,28 @@ func init() {
 	}
 }
 
+func TestIndexingRenamesFiles(t *testing.T) {
+	checkDeps(t)
+	ensureGitalyRepository(t)
+	c, td := buildWorkingIndex(t)
+
+	defer td()
+
+	// The commit before files/js/commit.js.coffee is renamed
+	err, _, _ := run("", "281d3a76f31c812dbf48abce82ccf6860adedd81")
+	require.NoError(t, err)
+	_, err = c.GetBlob("files/js/commit.js.coffee")
+	require.NoError(t, err)
+
+	// Now we expect it to have been renamed
+	err, _, _ = run("281d3a76f31c812dbf48abce82ccf6860adedd81", "c347ca2e140aa667b968e51ed0ffe055501fe4f4")
+	require.NoError(t, err)
+	_, err = c.GetBlob("files/js/commit.js.coffee")
+	require.Error(t, err)
+	_, err = c.GetBlob("files/js/commit.coffee")
+	require.NoError(t, err)
+}
+
 func ensureGitalyRepository(t *testing.T) {
 	conn, err := gitalyClient.Dial(gitalyConnInfo.Address, gitalyClient.DefaultDialOpts)
 	require.NoError(t, err)

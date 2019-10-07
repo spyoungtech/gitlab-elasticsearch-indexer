@@ -120,7 +120,7 @@ func (gc *gitalyClient) Close() {
 	gc.conn.Close()
 }
 
-func (gc *gitalyClient) EachFileChange(ins, mod, del FileFunc) error {
+func (gc *gitalyClient) EachFileChange(put, del FileFunc) error {
 	request := &pb.GetRawChangesRequest{
 		Repository:   gc.repository,
 		FromRevision: gc.FromHash,
@@ -149,35 +149,28 @@ func (gc *gitalyClient) EachFileChange(ins, mod, del FileFunc) error {
 			}
 
 			switch change.Operation.String() {
-			case "ADDED":
-				file, err := gc.gitalyBuildFile(change, string(change.NewPath), false)
-				if err != nil {
-					return err
-				}
-				log.Debug("Indexing blob change: ", "ADD", file.Path)
-				err = ins(file, gc.FromHash, gc.ToHash)
-			case "DELETED":
+			case "DELETED", "RENAMED":
 				file, err := gc.gitalyBuildFile(change, string(change.OldPath), true)
 				if err != nil {
 					return err
 				}
 				log.Debug("Indexing blob change: ", "DELETE", file.Path)
-				err = del(file, gc.FromHash, gc.ToHash)
-			case "RENAMED", "MODIFIED", "COPIED":
+				if err = del(file, gc.FromHash, gc.ToHash); err != nil {
+					return err
+				}
+			}
+
+			switch change.Operation.String() {
+			case "ADDED", "RENAMED", "MODIFIED", "COPIED":
 				file, err := gc.gitalyBuildFile(change, string(change.NewPath), false)
 				if err != nil {
 					return err
 				}
-				log.Debug("Indexing blob change: ", "MODIFY", file.Path)
-				err = mod(file, gc.FromHash, gc.ToHash)
-			default:
-				// "TYPE_CHANGED", "UNKNOWN" do not require anything to do
+				log.Debug("Indexing blob change: ", "PUT", file.Path)
+				if err = put(file, gc.FromHash, gc.ToHash); err != nil {
+					return err
+				}
 			}
-
-			if err != nil {
-				return err
-			}
-
 		}
 	}
 	return nil

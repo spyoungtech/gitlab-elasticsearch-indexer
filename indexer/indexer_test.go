@@ -60,15 +60,15 @@ func (f *fakeSubmitter) Flush() error {
 	return nil
 }
 
-func (r *fakeRepository) EachFileChange(ins, mod, del git.FileFunc) error {
+func (r *fakeRepository) EachFileChange(put, del git.FileFunc) error {
 	for _, file := range r.added {
-		if err := ins(file, sha, sha); err != nil {
+		if err := put(file, sha, sha); err != nil {
 			return err
 		}
 	}
 
 	for _, file := range r.modified {
-		if err := mod(file, sha, sha); err != nil {
+		if err := put(file, sha, sha); err != nil {
 			return err
 		}
 	}

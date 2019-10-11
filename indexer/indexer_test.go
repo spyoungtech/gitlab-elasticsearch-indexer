@@ -60,7 +60,7 @@ func (f *fakeSubmitter) Flush() error {
 	return nil
 }
 
-func (r *fakeRepository) EachFileChange(put, del git.FileFunc) error {
+func (r *fakeRepository) EachFileChange(put git.PutFunc, del git.DelFunc) error {
 	for _, file := range r.added {
 		if err := put(file, sha, sha); err != nil {
 			return err
@@ -74,7 +74,7 @@ func (r *fakeRepository) EachFileChange(put, del git.FileFunc) error {
 	}
 
 	for _, file := range r.removed {
-		if err := del(file, sha, sha); err != nil {
+		if err := del(file.Path); err != nil {
 			return err
 		}
 	}

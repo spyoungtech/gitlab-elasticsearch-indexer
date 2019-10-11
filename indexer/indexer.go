@@ -68,8 +68,8 @@ func (i *Indexer) submitWikiBlob(f *git.File, _, toCommit string) error {
 	return nil
 }
 
-func (i *Indexer) removeBlob(file *git.File, _, _ string) error {
-	blobID := GenerateBlobID(i.Submitter.ParentID(), file.Path)
+func (i *Indexer) removeBlob(path string) error {
+	blobID := GenerateBlobID(i.Submitter.ParentID(), path)
 
 	i.Submitter.Remove(blobID)
 	return nil

@@ -235,9 +235,9 @@ func TestEmptyToSHADefaultsToHeadSHA(t *testing.T) {
 	assert.Equal(t, []string{headSHA}, commitHashes)
 }
 
-func runEachFileChange(repo git.Repository) (map[string]*git.File, map[string]*git.File, []string, error) {
+func runEachFileChange(repo git.Repository) (map[string]*git.File, []string, []string, error) {
 	putFiles := make(map[string]*git.File)
-	delFiles := make(map[string]*git.File)
+	delFiles := []string{}
 	filePaths := []string{}
 
 	putStore := func(f *git.File, _, _ string) error {
@@ -246,9 +246,9 @@ func runEachFileChange(repo git.Repository) (map[string]*git.File, map[string]*g
 		return nil
 	}
 
-	delStore := func(f *git.File, _, _ string) error {
-		delFiles[f.Path] = f
-		filePaths = append(filePaths, f.Path)
+	delStore := func(f string) error {
+		delFiles = append(delFiles, f)
+		filePaths = append(filePaths, f)
 		return nil
 	}
 

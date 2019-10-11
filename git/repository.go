@@ -26,9 +26,10 @@ type Commit struct {
 }
 
 type Repository interface {
-	EachFileChange(put, del FileFunc) error
+	EachFileChange(put PutFunc, del DelFunc) error
 	EachCommit(f CommitFunc) error
 }
 
-type FileFunc func(file *File, fromCommit, toCommit string) error
+type PutFunc func(file *File, fromCommit, toCommit string) error
+type DelFunc func(path string) error
 type CommitFunc func(commit *Commit) error

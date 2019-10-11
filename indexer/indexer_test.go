@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path"
 	"strings"
 	"testing"
 	"time"
@@ -143,7 +144,7 @@ func validBlob(file *git.File, content, language string) *indexer.Blob {
 		CommitSHA: sha,
 		Content:   content,
 		Path:      file.Path,
-		Filename:  file.Path,
+		Filename:  path.Base(file.Path),
 		Language:  language,
 	}
 }

@@ -23,6 +23,16 @@ install: build
 clean:
 	$Q rm -rf bin tmp
 
+.PHONY:	tag
+tag:
+	$(call message,$@)
+	sh _support/tag.sh
+
+.PHONY:	signed_tag
+signed_tag:
+	$(call message,$@)
+	TAG_OPTS=-s sh _support/tag.sh
+
 test:
 	# install -race libs to speed up next run
 	$Q $(GO) test $(if $V,-v) -i -race ./...

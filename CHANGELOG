@@ -1,5 +1,10 @@
 # GitLab Elasticsearch Indexer
 
+## v1.4.0
+
+- Automatically set PKG_CONFIG_PATH on macOS !39
+- Ensure renaming deletes old indexed file !41
+
 ## v1.3.0
 
 - Include project_id when indexing blob !36

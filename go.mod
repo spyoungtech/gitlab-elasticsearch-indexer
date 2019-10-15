@@ -12,10 +12,10 @@ require (
 	github.com/sirupsen/logrus v1.4.1
 	github.com/smartystreets/goconvey v0.0.0-20190330032615-68dc04aab96a // indirect
 	github.com/stretchr/testify v1.3.0
-	gitlab.com/gitlab-org/gitaly v1.57.0
+	gitlab.com/gitlab-org/gitaly v1.68.0
 	gitlab.com/lupine/icu v1.0.0
 	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
-	google.golang.org/grpc v1.20.1
+	google.golang.org/grpc v1.24.0
 	gopkg.in/ini.v1 v1.42.0 // indirect
 	gopkg.in/olivere/elastic.v5 v5.0.80
 )

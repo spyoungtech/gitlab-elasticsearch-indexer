@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path"
 	"strconv"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
@@ -89,7 +90,7 @@ func BuildBlob(file *git.File, parentID int64, commitSHA string, blobType string
 		CommitSHA: commitSHA,
 		Content:   content,
 		Path:      filename,
-		Filename:  filename,
+		Filename:  path.Base(filename),
 		Language:  DetectLanguage(filename, b),
 	}
 

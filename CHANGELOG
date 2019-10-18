@@ -1,5 +1,9 @@
 # GitLab Elasticsearch Indexer
 
+## v1.5.0
+
+- Don't store full blob path in filename field !44
+
 ## v1.4.0
 
 - Automatically set PKG_CONFIG_PATH on macOS !39

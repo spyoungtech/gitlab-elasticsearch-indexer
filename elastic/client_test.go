@@ -13,6 +13,7 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
 )
@@ -179,4 +180,17 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	assert.Error(t, err)
 
 	assert.NoError(t, client.DeleteIndex())
+}
+
+func TestElasticReadConfig(t *testing.T) {
+	config, err := elastic.ReadConfig(strings.NewReader(
+		`{
+			"url":["http://elasticsearch:9200"],
+			"index_name": "foobar"
+		}`,
+	))
+	require.NoError(t, err)
+
+	require.Equal(t, "foobar", config.IndexName)
+	require.Equal(t, []string{"http://elasticsearch:9200"}, config.URL)
 }

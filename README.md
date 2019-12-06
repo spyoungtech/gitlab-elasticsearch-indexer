@@ -57,7 +57,7 @@ Before running tests, set configuration variables`
 
 ```
 export GITALY_CONNECTION_INFO='{"address": "tcp://localhost:8075", "storage": "default"}'
-export ELASTIC_CONNECTION_INFO='{"url":["http://localhost:9200"]}'
+export ELASTIC_CONNECTION_INFO='{"url":["http://localhost:9200"], "index_name":"gitlab-test"}'
 ```
 **Note**: If using a socket, please pass your URI in the form `unix://FULL_PATH_WITH_LEADING_SLASH`
 Example:

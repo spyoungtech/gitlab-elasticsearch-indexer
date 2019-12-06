@@ -6,7 +6,7 @@ import (
 )
 
 type Config struct {
-	IndexName string   `json:"-"`
+	IndexName string   `json:"index_name"`
 	ProjectID int64    `json:"-"`
 	URL       []string `json:"url"`
 	AWS       bool     `json:"aws"`

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 	"time"
 
@@ -113,8 +114,7 @@ func buildBrokenIndex(t *testing.T) (*elastic.Client, func()) {
 }
 
 func buildIndex(t *testing.T, working bool) (*elastic.Client, func()) {
-	railsEnv := fmt.Sprintf("test-integration-%d", time.Now().Unix())
-	os.Setenv("RAILS_ENV", railsEnv)
+	setElasticsearchConnectionInfo(t)
 
 	client, err := elastic.FromEnv(projectID)
 	require.NoError(t, err)
@@ -128,6 +128,18 @@ func buildIndex(t *testing.T, working bool) (*elastic.Client, func()) {
 	return client, func() {
 		client.DeleteIndex()
 	}
+}
+
+// Substitude index_name with a dynamically generated one
+func setElasticsearchConnectionInfo(t *testing.T) {
+	config, err := elastic.ReadConfig(strings.NewReader(os.Getenv("ELASTIC_CONNECTION_INFO")))
+	require.NoError(t, err)
+
+	config.IndexName = fmt.Sprintf("%s-%d", config.IndexName, time.Now().Unix())
+	out, err := json.Marshal(config)
+	require.NoError(t, err)
+
+	os.Setenv("ELASTIC_CONNECTION_INFO", string(out))
 }
 
 func run(from, to string, args ...string) (error, string, string) {

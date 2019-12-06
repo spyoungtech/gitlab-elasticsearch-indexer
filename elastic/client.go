@@ -48,13 +48,15 @@ func FromEnv(projectID int64) (*Client, error) {
 		return nil, fmt.Errorf("Couldn't parse ELASTIC_CONNECTION_INFO: %s", err)
 	}
 
-	railsEnv := os.Getenv("RAILS_ENV")
-	indexName := "gitlab"
-	if railsEnv != "" {
-		indexName = indexName + "-" + railsEnv
+	if config.IndexName == "" {
+		railsEnv := os.Getenv("RAILS_ENV")
+		indexName := "gitlab"
+		if railsEnv != "" {
+			indexName = indexName + "-" + railsEnv
+		}
+		config.IndexName = indexName
 	}
 
-	config.IndexName = indexName
 	config.ProjectID = projectID
 
 	return NewClient(config)

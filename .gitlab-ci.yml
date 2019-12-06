@@ -2,7 +2,7 @@
   variables:
     GITALY_CONNECTION_INFO: '{"address":"tcp://gitaly:8075", "storage":"default"}'
     V: "1"
-    ELASTIC_CONNECTION_INFO: '{"url":["http://elasticsearch:9200"]}'
+    ELASTIC_CONNECTION_INFO: '{"url":["http://elasticsearch:9200"], "index_name":"gitlab-test"}'
     # Make Elasticsearch less memory-hungry
     ES_JAVA_OPTS: "-Xms256m -Xmx256m"
   stage: test

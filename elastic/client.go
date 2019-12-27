@@ -63,7 +63,13 @@ func FromEnv(projectID int64) (*Client, error) {
 }
 
 func (c *Client) afterCallback(executionId int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
-	if response.Errors {
+	if err != nil {
+		c.bulkFailed = true
+		log.Printf("bulk request %v: error: %v", executionId, err)
+	}
+
+	// bulk response can be nil in some cases, we must check first
+	if response != nil && response.Errors {
 		numFailed := len(response.Failed())
 		if numFailed > 0 {
 			c.bulkFailed = true
@@ -71,11 +77,6 @@ func (c *Client) afterCallback(executionId int64, requests []elastic.BulkableReq
 
 			log.Printf("bulk request %v: failed to insert %v/%v documents ", executionId, numFailed, total)
 		}
-	}
-
-	if err != nil {
-		c.bulkFailed = true
-		log.Printf("bulk request %v: error: %v", executionId, err)
 	}
 }
 

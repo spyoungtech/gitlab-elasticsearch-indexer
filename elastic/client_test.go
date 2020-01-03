@@ -1,12 +1,14 @@
 package elastic_test
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -14,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	oliverelastic "gopkg.in/olivere/elastic.v5"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
 )
@@ -141,7 +144,7 @@ func TestAWSConfiguration(t *testing.T) {
 	}
 }
 
-func TestElasticClientIndexAndRetrieval(t *testing.T) {
+func setupTestClient(t *testing.T) *elastic.Client {
 	config := os.Getenv("ELASTIC_CONNECTION_INFO")
 	if config == "" {
 		t.Log("ELASTIC_CONNECTION_INFO not set")
@@ -155,7 +158,49 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 
 	assert.Equal(t, projectID, client.ParentID())
 
+	return client
+}
+
+func setupTestClientAndCreateIndex(t *testing.T) *elastic.Client {
+	client := setupTestClient(t)
 	assert.NoError(t, client.CreateWorkingIndex())
+
+	return client
+}
+
+func setupTestClientAndCreateIndexWithAlias(t *testing.T, alias string, indices ...string) *elastic.Client {
+	c := setupTestClient(t)
+
+	info, err := c.Client.NodesInfo().Do(context.Background())
+	assert.NoError(t, err)
+
+	mapping := strings.Replace(elastic.IndexMapping, "__PROPERTIES__", elastic.IndexProperties, -1)
+	for _, node := range info.Nodes {
+		version, _ := strconv.Atoi(string(node.Version[0]))
+		if version >= 6 {
+			// single_type is an option only available on 5.6 that ES6 cannot handle
+			mapping = strings.Replace(mapping, `"index.mapping.single_type": true,`, "", 1)
+		}
+		break
+	}
+
+	for _, indexName := range indices {
+		createIndex, err := c.Client.CreateIndex(indexName).BodyString(mapping).Do(context.Background())
+		assert.NoError(t, err)
+		assert.True(t, createIndex.Acknowledged)
+	}
+
+	res, err := c.Client.Alias().Action(oliverelastic.NewAliasAddAction(alias).Index(indices...)).Do(context.TODO())
+	assert.NoError(t, err)
+	assert.True(t, res.Acknowledged)
+
+	c.IndexName = alias
+
+	return c
+}
+
+func TestElasticClientIndexAndRetrieval(t *testing.T) {
+	client := setupTestClientAndCreateIndex(t)
 
 	blobDoc := map[string]interface{}{}
 	client.Index(projectIDString+"_foo", blobDoc)
@@ -179,7 +224,34 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	_, err = client.GetBlob("foo")
 	assert.Error(t, err)
 
+	// indexing a doc with unexpected field will cause an ES strict_dynamic_mapping_exception
+	// for our IndexMapping
+	blobDocInvalid := map[string]interface{}{fmt.Sprintf("invalid-key-%d", time.Now().Unix()): ""}
+	client.Index(projectIDString+"_invalid", blobDocInvalid)
+	assert.Error(t, client.Flush())
+
 	assert.NoError(t, client.DeleteIndex())
+}
+
+func TestFlushErrorWithInvalidAlias(t *testing.T) {
+	ts := time.Now().Unix()
+	blobAliasName := fmt.Sprintf("gitlab-test-blob-alias-%d", ts)
+	blobIndexName1 := fmt.Sprintf("gitlab-test-blob-index1-%d", ts)
+	blobIndexName2 := fmt.Sprintf("gitlab-test-blob-index2-%d", ts)
+
+	// create 2 indices with 1 alias to both, which will get an ES 400
+	// response when indexing:
+	// Alias [**] has more than one indices associated with it [[**, **]],
+	// can't execute a single index op [type=illegal_argument_exception]
+	client := setupTestClientAndCreateIndexWithAlias(t, blobAliasName, blobIndexName1, blobIndexName2)
+
+	blobDoc := map[string]interface{}{}
+	client.Index(projectIDString+"_foo", blobDoc)
+	assert.Error(t, client.Flush())
+
+	res, err := client.Client.DeleteIndex(blobIndexName1, blobIndexName2).Do(context.Background())
+	assert.NoError(t, err)
+	assert.True(t, res.Acknowledged)
 }
 
 func TestElasticReadConfig(t *testing.T) {

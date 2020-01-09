@@ -42,7 +42,7 @@ const credsFailRespTmpl = `{
 func initTestServer(expireOn string, failAssume bool) *httptest.Server {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/latest/meta-data/iam/security-credentials":
+		case "/latest/meta-data/iam/security-credentials/":
 			fmt.Fprintln(w, "RoleName")
 		case "/latest/meta-data/iam/security-credentials/RoleName":
 			if failAssume {

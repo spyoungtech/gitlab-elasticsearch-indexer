@@ -9,7 +9,6 @@ import (
 const IndexMapping = `
 {
 	"settings": {
-		"index.mapping.single_type": true,
 		"analysis": {
 			"filter": {
 				"my_stemmer": {
@@ -374,26 +373,33 @@ const IndexProperties = `
 }
 `
 
-// createIndex creates an index matching that created by gitlab-elasticsearch-git v1.1.1
+// createIndex creates an index matching that created by GitLab
 func (c *Client) createIndex(mapping string) error {
 	info, err := c.Client.NodesInfo().Do(context.Background())
 	if err != nil {
 		return err
 	}
 
+	createIndexService := c.Client.CreateIndex(c.IndexName).BodyString(mapping)
+
 	for _, node := range info.Nodes {
 		// Grab the first character of the version string and turn it into an int
 		version, _ := strconv.Atoi(string(node.Version[0]))
-		if version >= 6 {
-			// single_type is an option only available on 5.6 that ES6 cannot handle
-			mapping = strings.Replace(mapping, `"index.mapping.single_type": true,`, "", 1)
+		if version == 7 {
+			// include_type_name defaults to false in ES7. This will ensure ES7
+			// behaves like ES6 when creating mappings. See
+			// https://www.elastic.co/blog/moving-from-types-to-typeless-apis-in-elasticsearch-7-0
+			// for more information. We also can't set this for any versions before
+			// 6.8 as this parameter was not supported. Since it defaults to true in
+			// all 6.x it's safe to only set it for 7.x.
+			createIndexService = createIndexService.IncludeTypeName(true)
 		}
 
 		// We only look at the first node and assume they're all the same version
 		break
 	}
 
-	createIndex, err := c.Client.CreateIndex(c.IndexName).BodyString(mapping).Do(context.Background())
+	createIndex, err := createIndexService.Do(context.Background())
 	if err != nil {
 		return err
 	}

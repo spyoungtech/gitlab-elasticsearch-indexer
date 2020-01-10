@@ -37,7 +37,6 @@ const IndexMapping = `
 			"analyzer": {
 				"default": {
 					"filter": [
-						"standard",
 						"lowercase",
 						"my_stemmer"
 					],

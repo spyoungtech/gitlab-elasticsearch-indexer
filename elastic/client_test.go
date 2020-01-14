@@ -199,15 +199,16 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	assert.NoError(t, client.DeleteIndex())
 }
 
-func TestFlushErrorWithUnmarshallableDoc(t *testing.T) {
-	client := setupTestClientAndCreateIndex(t)
+func TestFlushErrorWithESActionRequestValidationException(t *testing.T) {
+	client := setupTestClient(t)
 
-	errDoc := map[string]interface{}{"unmarshallable_key": make(chan struct{})}
-	client.Index(projectIDString+"_foo", errDoc)
+	// set IndexName empty here to simulate ES action_request_validation_exception,
+	// so that the `err` param passed to `afterFunc` is not nil
+	client.IndexName = ""
+	blobDoc := map[string]interface{}{}
+	client.Index(projectIDString+"_foo", blobDoc)
 
 	assert.Error(t, client.Flush())
-
-	assert.NoError(t, client.DeleteIndex())
 }
 
 func TestElasticReadConfig(t *testing.T) {

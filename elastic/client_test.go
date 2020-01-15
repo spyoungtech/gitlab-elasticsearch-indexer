@@ -141,7 +141,7 @@ func TestAWSConfiguration(t *testing.T) {
 	}
 }
 
-func TestElasticClientIndexAndRetrieval(t *testing.T) {
+func setupTestClient(t *testing.T) *elastic.Client {
 	config := os.Getenv("ELASTIC_CONNECTION_INFO")
 	if config == "" {
 		t.Log("ELASTIC_CONNECTION_INFO not set")
@@ -155,7 +155,18 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 
 	assert.Equal(t, projectID, client.ParentID())
 
+	return client
+}
+
+func setupTestClientAndCreateIndex(t *testing.T) *elastic.Client {
+	client := setupTestClient(t)
 	assert.NoError(t, client.CreateWorkingIndex())
+
+	return client
+}
+
+func TestElasticClientIndexAndRetrieval(t *testing.T) {
+	client := setupTestClientAndCreateIndex(t)
 
 	blobDoc := map[string]interface{}{}
 	client.Index(projectIDString+"_foo", blobDoc)
@@ -179,7 +190,25 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	_, err = client.GetBlob("foo")
 	assert.Error(t, err)
 
+	// indexing a doc with unexpected field will cause an ES strict_dynamic_mapping_exception
+	// for our IndexMapping
+	blobDocInvalid := map[string]interface{}{fmt.Sprintf("invalid-key-%d", time.Now().Unix()): ""}
+	client.Index(projectIDString+"_invalid", blobDocInvalid)
+	assert.Error(t, client.Flush())
+
 	assert.NoError(t, client.DeleteIndex())
+}
+
+func TestFlushErrorWithESActionRequestValidationException(t *testing.T) {
+	client := setupTestClient(t)
+
+	// set IndexName empty here to simulate ES action_request_validation_exception,
+	// so that the `err` param passed to `afterFunc` is not nil
+	client.IndexName = ""
+	blobDoc := map[string]interface{}{}
+	client.Index(projectIDString+"_foo", blobDoc)
+
+	assert.Error(t, client.Flush())
 }
 
 func TestElasticReadConfig(t *testing.T) {

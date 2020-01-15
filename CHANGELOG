@@ -1,5 +1,13 @@
 # GitLab Elasticsearch Indexer
 
+## v2.0.0
+
+- Drop support for Elasticsearch versions 5.x !54
+- Add support for Elasticsearch versions 7.x !54
+- Fix Elasticsearch 6.7.2 warnings about deprecated field _routing !52
+- Update elasticsearch client dependency !52
+- Allow configuration of index name !49
+
 ## v1.5.0
 
 - Don't store full blob path in filename field !44

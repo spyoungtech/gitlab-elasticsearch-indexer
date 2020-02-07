@@ -12,6 +12,7 @@ require (
 	github.com/stretchr/testify v1.3.0
 	gitlab.com/gitlab-org/gitaly v1.68.0
 	gitlab.com/lupine/icu v1.0.0
-	golang.org/x/net v0.0.0-20190613194153-d28f0bde5980
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+	golang.org/x/tools v0.0.0-20200207001614-6fdc5776f4bb
 	google.golang.org/grpc v1.24.0
 )

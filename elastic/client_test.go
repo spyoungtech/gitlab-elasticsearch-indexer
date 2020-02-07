@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/elastic"
@@ -71,9 +70,9 @@ func TestResolveAWSCredentialsStatic(t *testing.T) {
 
 	creds := elastic.ResolveAWSCredentials(config, aws_config)
 	credsValue, err := creds.Get()
-	assert.Nil(t, err, "Expect no error, %v", err)
-	assert.Equal(t, "static_access_key", credsValue.AccessKeyID, "Expect access key ID to match")
-	assert.Equal(t, "static_secret_access_key", credsValue.SecretAccessKey, "Expect secret access key to match")
+	require.Nil(t, err, "Expect no error, %v", err)
+	require.Equal(t, "static_access_key", credsValue.AccessKeyID, "Expect access key ID to match")
+	require.Equal(t, "static_secret_access_key", credsValue.SecretAccessKey, "Expect secret access key to match")
 }
 
 func TestResolveAWSCredentialsEc2RoleProfile(t *testing.T) {
@@ -95,9 +94,9 @@ func TestResolveAWSCredentialsEc2RoleProfile(t *testing.T) {
 
 	creds := elastic.ResolveAWSCredentials(config, aws_config)
 	credsValue, err := creds.Get()
-	assert.Nil(t, err, "Expect no error, %v", err)
-	assert.Equal(t, "accessKey", credsValue.AccessKeyID, "Expect access key ID to match")
-	assert.Equal(t, "secret", credsValue.SecretAccessKey, "Expect secret access key to match")
+	require.Nil(t, err, "Expect no error, %v", err)
+	require.Equal(t, "accessKey", credsValue.AccessKeyID, "Expect access key ID to match")
+	require.Equal(t, "secret", credsValue.SecretAccessKey, "Expect secret access key to match")
 }
 
 func TestAWSConfiguration(t *testing.T) {
@@ -127,18 +126,17 @@ func TestAWSConfiguration(t *testing.T) {
 			"aws_secret_access_key": "0"
 		}`,
 	))
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	config.ProjectID = 633
 
 	client, err := elastic.NewClient(config)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	defer client.Close()
 
-	if assert.NotNil(t, req) {
-		authRE := regexp.MustCompile(`\AAWS4-HMAC-SHA256 Credential=0/\d{8}/us-east-1/es/aws4_request, SignedHeaders=accept;content-type;date;host;x-amz-date, Signature=[a-f0-9]{64}\z`)
-		assert.Regexp(t, authRE, req.Header.Get("Authorization"))
-		assert.NotEqual(t, "", req.Header.Get("X-Amz-Date"))
-	}
+	require.NotNil(t, req)
+	authRE := regexp.MustCompile(`\AAWS4-HMAC-SHA256 Credential=0/\d{8}/us-east-1/es/aws4_request, SignedHeaders=accept;content-type;date;host;x-amz-date, Signature=[a-f0-9]{64}\z`)
+	require.Regexp(t, authRE, req.Header.Get("Authorization"))
+	require.NotEqual(t, "", req.Header.Get("X-Amz-Date"))
 }
 
 func setupTestClient(t *testing.T) *elastic.Client {
@@ -151,16 +149,16 @@ func setupTestClient(t *testing.T) *elastic.Client {
 	os.Setenv("RAILS_ENV", fmt.Sprintf("test-elastic-%d", time.Now().Unix()))
 
 	client, err := elastic.FromEnv(projectID)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, projectID, client.ParentID())
+	require.Equal(t, projectID, client.ParentID())
 
 	return client
 }
 
 func setupTestClientAndCreateIndex(t *testing.T) *elastic.Client {
 	client := setupTestClient(t)
-	assert.NoError(t, client.CreateWorkingIndex())
+	require.NoError(t, client.CreateWorkingIndex())
 
 	return client
 }
@@ -174,29 +172,29 @@ func TestElasticClientIndexAndRetrieval(t *testing.T) {
 	commitDoc := map[string]interface{}{}
 	client.Index(projectIDString+"_0000", commitDoc)
 
-	assert.NoError(t, client.Flush())
+	require.NoError(t, client.Flush())
 
 	blob, err := client.GetBlob("foo")
-	assert.NoError(t, err)
-	assert.Equal(t, true, blob.Found)
+	require.NoError(t, err)
+	require.Equal(t, true, blob.Found)
 
 	commit, err := client.GetCommit("0000")
-	assert.NoError(t, err)
-	assert.Equal(t, true, commit.Found)
+	require.NoError(t, err)
+	require.Equal(t, true, commit.Found)
 
 	client.Remove(projectIDString + "_foo")
-	assert.NoError(t, client.Flush())
+	require.NoError(t, client.Flush())
 
 	_, err = client.GetBlob("foo")
-	assert.Error(t, err)
+	require.Error(t, err)
 
 	// indexing a doc with unexpected field will cause an ES strict_dynamic_mapping_exception
 	// for our IndexMapping
 	blobDocInvalid := map[string]interface{}{fmt.Sprintf("invalid-key-%d", time.Now().Unix()): ""}
 	client.Index(projectIDString+"_invalid", blobDocInvalid)
-	assert.Error(t, client.Flush())
+	require.Error(t, client.Flush())
 
-	assert.NoError(t, client.DeleteIndex())
+	require.NoError(t, client.DeleteIndex())
 }
 
 func TestFlushErrorWithESActionRequestValidationException(t *testing.T) {
@@ -208,7 +206,7 @@ func TestFlushErrorWithESActionRequestValidationException(t *testing.T) {
 	blobDoc := map[string]interface{}{}
 	client.Index(projectIDString+"_foo", blobDoc)
 
-	assert.Error(t, client.Flush())
+	require.Error(t, client.Flush())
 }
 
 func TestElasticReadConfig(t *testing.T) {

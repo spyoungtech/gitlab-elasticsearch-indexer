@@ -222,4 +222,20 @@ func TestElasticReadConfig(t *testing.T) {
 
 	require.Equal(t, "foobar", config.IndexName)
 	require.Equal(t, []string{"http://elasticsearch:9200"}, config.URL)
+	require.Equal(t, elastic.DefaultMaxBulkSize, config.MaxBulkSize)
+	require.Equal(t, elastic.DefaultBulkWorkers, config.BulkWorkers)
+}
+
+func TestElasticReadConfigCustomBulkSettings(t *testing.T) {
+	config, err := elastic.ReadConfig(strings.NewReader(
+		`{
+			"max_bulk_size_bytes": 1024,
+			"max_bulk_concurrency": 6
+		}`,
+	))
+	require.NoError(t, err)
+
+	require.Equal(t, 1024, config.MaxBulkSize)
+	require.Equal(t, 6, config.BulkWorkers)
+
 }

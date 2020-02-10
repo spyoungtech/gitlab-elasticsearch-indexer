@@ -22,14 +22,6 @@ var (
 	timeoutError = fmt.Errorf("Timeout")
 )
 
-const (
-	// TODO: make this configurable / detectable.
-	// Limiting to 10MiB lets us work on small AWS clusters, but unnecessarily
-	// increases round trips in larger or non-AWS clusters
-	MaxBulkSize = 10 * 1024 * 1024
-	BulkWorkers = 10
-)
-
 type Client struct {
 	IndexName  string
 	ProjectID  int64
@@ -120,8 +112,8 @@ func NewClient(config *Config) (*Client, error) {
 	}
 
 	bulk, err := client.BulkProcessor().
-		Workers(BulkWorkers).
-		BulkSize(MaxBulkSize).
+		Workers(config.BulkWorkers).
+		BulkSize(config.MaxBulkSize).
 		After(wrappedClient.afterCallback).
 		Do(context.Background())
 

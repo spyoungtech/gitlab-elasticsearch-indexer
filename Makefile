@@ -5,6 +5,9 @@ GO111MODULE := on
 
 GO = _support/go
 
+LOCAL_GO_FILES = $(shell find . -type f -name '*.go' -not -path './.go' -not -path './.go/*')
+GO_PACKAGES = $(shell go list ./...)
+
 # V := 1 # When V is set, print commands and build progress.
 
 .PHONY: all
@@ -35,13 +38,13 @@ signed_tag:
 
 test:
 	# install -race libs to speed up next run
-	$Q $(GO) test $(if $V,-v) -i -race ./...
-	$Q $(GO) vet ./...
-	$Q GODEBUG=cgocheck=2 $(GO) test $(if $V,-v) -race ./...
+	$Q $(GO) test $(if $V,-v) -i -race $(GO_PACKAGES)
+	$Q $(GO) vet $(GO_PACKAGES)
+	$Q GODEBUG=cgocheck=2 $(GO) test $(if $V,-v) -race $(GO_PACKAGES)
 
 cover: tmp
 	@echo "NOTE: make cover does not exit 1 on failure, don't use it to check for tests success!"
-	$Q $(GO) test -short -cover -coverprofile=tmp/test.coverage ./...
+	$Q $(GO) test -short -cover -coverprofile=tmp/test.coverage $(GO_PACKAGFES)
 	$Q $(GO) tool cover -html tmp/test.coverage -o tmp/test.coverage.html
 	@echo ""
 	@echo "=====> Total test coverage: <====="
@@ -49,7 +52,7 @@ cover: tmp
 	$Q $(GO) tool cover -func tmp/test.coverage
 
 format: bin/goimports
-	$Q find . -iname \*.go | xargs ./bin/goimports $(if $V,-v) -w
+	$Q bin/goimports $(if $V,-v) -w $(LOCAL_GO_FILES)
 
 ##### =====> Internals <===== #####
 
@@ -63,7 +66,6 @@ Q := $(if $V,,@)
 tmp:
 	mkdir tmp
 
-.PHONY: bin/goimports
 bin/goimports:
 	$Q $(GO) build -o bin/goimports golang.org/x/tools/cmd/goimports
 

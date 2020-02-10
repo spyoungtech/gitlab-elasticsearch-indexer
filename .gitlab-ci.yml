@@ -1,4 +1,14 @@
+.go-cache:
+  variables:
+    GOPATH: $CI_PROJECT_DIR/.go
+  before_script:
+    - mkdir -p .go
+  cache:
+    paths:
+      - .go/pkg/mod/
+
 .test-default: &test-default
+  extends: .go-cache
   variables:
     GITALY_CONNECTION_INFO: '{"address":"tcp://gitaly:8075", "storage":"default"}'
     V: "1"
@@ -74,6 +84,8 @@ lint:go-mod:
     - |
       STATUS=$( git status --porcelain go.mod go.sum )
       if [ ! -z "$STATUS" ]; then
+        git diff go.mod go.sum
+        echo ""
         echo "Running go mod tidy modified go.mod and/or go.sum"
         exit 1
       fi

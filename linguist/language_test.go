@@ -3,7 +3,7 @@ package linguist_test
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/linguist"
 )
@@ -31,56 +31,56 @@ func TestCommonLanguagesAreDetectedByExtension(t *testing.T) {
 		{"foo.md", "Markdown"}, // Multiple possible languages
 	} {
 		langs := linguist.DetectLanguageByExtension(tc.file)
-		assert.Equal(t, 1, len(langs))
-		assert.Equal(t, tc.lang, langs[0].Name)
+		require.Equal(t, 1, len(langs))
+		require.Equal(t, tc.lang, langs[0].Name)
 
 		lang := linguist.DetectLanguage(tc.file, []byte{})
-		assert.NotNil(t, lang)
-		assert.Equal(t, tc.lang, lang.Name)
+		require.NotNil(t, lang)
+		require.Equal(t, tc.lang, lang.Name)
 
 	}
 }
 
 func TestImaginaryLanguageIsntRecognised(t *testing.T) {
 	lang := linguist.DetectLanguageByFilename("foo.absolutely-nobody-will-make-this-extension")
-	assert.Nil(t, lang)
+	require.Nil(t, lang)
 }
 
 // This test checks the content of languages.go against expectations chosen to
 // validate the go:generate script
 func TestAttributesAreCopiedCorrectly(t *testing.T) {
 	ada := linguist.Languages["Ada"]
-	assert.NotNil(t, ada)
+	require.NotNil(t, ada)
 
 	cmake := linguist.Languages["CMake"]
-	assert.NotNil(t, cmake)
+	require.NotNil(t, cmake)
 
 	gettext := linguist.Languages["Gettext Catalog"]
-	assert.NotNil(t, gettext)
+	require.NotNil(t, gettext)
 
 	golang := linguist.Languages["Go"]
-	assert.NotNil(t, golang)
+	require.NotNil(t, golang)
 
 	json := linguist.Languages["JSON"]
-	assert.NotNil(t, json)
+	require.NotNil(t, json)
 
 	markdown := linguist.Languages["Markdown"]
-	assert.NotNil(t, markdown)
+	require.NotNil(t, markdown)
 
 	ruby := linguist.Languages["Ruby"]
-	assert.NotNil(t, ruby)
+	require.NotNil(t, ruby)
 
-	assert.Equal(t, "Go", golang.Name)
-	assert.Equal(t, "programming", golang.Type)
-	assert.Equal(t, "JavaScript", json.Group)
-	assert.Equal(t, "#375eab", golang.Color)
-	assert.Equal(t, []string{"ada95", "ada2005"}, ada.Aliases)
-	assert.Equal(t, []string{".go"}, golang.Extensions)
-	assert.Equal(t, []string{"CMakeLists.txt"}, cmake.Filenames)
-	assert.Equal(t, []string{"ruby", "macruby", "rake", "jruby", "rbx"}, ruby.Interpreters)
-	assert.Equal(t, "source.gfm", markdown.TmScope)
-	assert.Equal(t, "programming", golang.AceMode)
-	assert.Equal(t, false, gettext.Searchable)
-	assert.Equal(t, true, markdown.Wrap)
+	require.Equal(t, "Go", golang.Name)
+	require.Equal(t, "programming", golang.Type)
+	require.Equal(t, "JavaScript", json.Group)
+	require.Equal(t, "#375eab", golang.Color)
+	require.Equal(t, []string{"ada95", "ada2005"}, ada.Aliases)
+	require.Equal(t, []string{".go"}, golang.Extensions)
+	require.Equal(t, []string{"CMakeLists.txt"}, cmake.Filenames)
+	require.Equal(t, []string{"ruby", "macruby", "rake", "jruby", "rbx"}, ruby.Interpreters)
+	require.Equal(t, "source.gfm", markdown.TmScope)
+	require.Equal(t, "programming", golang.AceMode)
+	require.Equal(t, false, gettext.Searchable)
+	require.Equal(t, true, markdown.Wrap)
 
 }

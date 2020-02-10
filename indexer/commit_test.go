@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
 )
@@ -15,7 +15,7 @@ func TestBuildCommit(t *testing.T) {
 	expected := validCommit(gitCommit)
 	actual := indexer.BuildCommit(gitCommit, parentID)
 
-	assert.Equal(t, expected, actual)
+	require.Equal(t, expected, actual)
 
 	expectedJSON := `{
 		"sha"       : "` + expected.SHA + `",
@@ -35,10 +35,10 @@ func TestBuildCommit(t *testing.T) {
 	}`
 
 	actualJSON, err := json.Marshal(actual)
-	assert.NoError(t, err)
-	assert.JSONEq(t, expectedJSON, string(actualJSON))
+	require.NoError(t, err)
+	require.JSONEq(t, expectedJSON, string(actualJSON))
 }
 
 func TestGenerateCommitID(t *testing.T) {
-	assert.Equal(t, "2147483648_sha", indexer.GenerateCommitID(2147483648, "sha"))
+	require.Equal(t, "2147483648_sha", indexer.GenerateCommitID(2147483648, "sha"))
 }

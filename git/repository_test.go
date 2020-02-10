@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/net/context"
 
@@ -112,10 +111,10 @@ func TestEachCommit(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "", headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	commits, commitHashes, err := runEachCommit(repo)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expectedCommits := []string{
 		"b83d6e391c22777fca1ed3012fce84f633d7fed0",
@@ -161,13 +160,13 @@ func TestEachCommit(t *testing.T) {
 	sort.Strings(expectedCommits)
 	sort.Strings(commitHashes)
 
-	assert.Equal(t, expectedCommits, commitHashes)
+	require.Equal(t, expectedCommits, commitHashes)
 
 	// Now choose one commit and check it in detail
 
 	commit := commits[initialSHA]
 	date, err := time.Parse("Mon Jan 02 15:04:05 2006 -0700", "Thu Feb 27 10:03:18 2014 +0200")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	dmitriy := git.Signature{
 		Name:  "Dmitriy Zaporozhets",
@@ -175,10 +174,10 @@ func TestEachCommit(t *testing.T) {
 		When:  date.Local(),
 	}
 
-	assert.Equal(t, initialSHA, commit.Hash)
-	assert.Equal(t, "Initial commit\n", commit.Message)
-	assert.Equal(t, dmitriy, commit.Author)
-	assert.Equal(t, dmitriy, commit.Author)
+	require.Equal(t, initialSHA, commit.Hash)
+	require.Equal(t, "Initial commit\n", commit.Message)
+	require.Equal(t, dmitriy, commit.Author)
+	require.Equal(t, dmitriy, commit.Author)
 }
 
 func TestEachCommitGivenRangeOf3Commits(t *testing.T) {
@@ -186,16 +185,16 @@ func TestEachCommitGivenRangeOf3Commits(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expected := []string{"498214de67004b1da3d820901307bed2a68a8ef6", headSHA}
 	sort.Strings(expected)
 	sort.Strings(commitHashes)
 
-	assert.Equal(t, expected, commitHashes)
+	require.Equal(t, expected, commitHashes)
 }
 
 func TestEachCommitGivenRangeOf2Commits(t *testing.T) {
@@ -203,12 +202,12 @@ func TestEachCommitGivenRangeOf2Commits(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, []string{headSHA}, commitHashes)
+	require.Equal(t, []string{headSHA}, commitHashes)
 }
 
 func TestEachCommitGivenRangeOf1Commit(t *testing.T) {
@@ -216,11 +215,11 @@ func TestEachCommitGivenRangeOf1Commit(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, headSHA, headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
-	assert.NoError(t, err)
-	assert.Equal(t, []string{}, commitHashes)
+	require.NoError(t, err)
+	require.Equal(t, []string{}, commitHashes)
 }
 
 func TestEmptyToSHADefaultsToHeadSHA(t *testing.T) {
@@ -228,11 +227,11 @@ func TestEmptyToSHADefaultsToHeadSHA(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", "")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, commitHashes, err := runEachCommit(repo)
-	assert.NoError(t, err)
-	assert.Equal(t, []string{headSHA}, commitHashes)
+	require.NoError(t, err)
+	require.Equal(t, []string{headSHA}, commitHashes)
 }
 
 func runEachFileChange(repo git.Repository) (map[string]*git.File, []string, []string, error) {
@@ -261,10 +260,10 @@ func TestEachFileChangeAllModifications(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "", headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	putFiles, _, filePaths, err := runEachFileChange(repo)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	expectedFiles := []string{
 		".gitattributes",
@@ -311,19 +310,19 @@ func TestEachFileChangeAllModifications(t *testing.T) {
 	sort.Strings(expectedFiles)
 	sort.Strings(filePaths)
 
-	assert.Equal(t, expectedFiles, filePaths)
+	require.Equal(t, expectedFiles, filePaths)
 
 	// Now choose one file and check it in detail
 	file := putFiles["VERSION"]
 	blob, err := file.Blob()
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	data, err := ioutil.ReadAll(blob)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	assert.Equal(t, "VERSION", file.Path)
-	assert.Equal(t, "998707b421c89bd9a3063333f9f728ef3e43d101", file.Oid)
-	assert.Equal(t, int64(10), file.Size)
-	assert.Equal(t, "6.7.0.pre\n", string(data))
+	require.Equal(t, "VERSION", file.Path)
+	require.Equal(t, "998707b421c89bd9a3063333f9f728ef3e43d101", file.Oid)
+	require.Equal(t, int64(10), file.Size)
+	require.Equal(t, "6.7.0.pre\n", string(data))
 }
 
 func TestEachFileChangeGivenRangeOfThreeCommits(t *testing.T) {
@@ -331,11 +330,11 @@ func TestEachFileChangeGivenRangeOfThreeCommits(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "1b12f15a11fc6e62177bef08f47bc7b5ce50b141", headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, _, filePaths, err := runEachFileChange(repo)
 
-	assert.Equal(t, []string{"bar/branch-test.txt"}, filePaths)
+	require.Equal(t, []string{"bar/branch-test.txt"}, filePaths)
 }
 
 func TestEachFileChangeGivenRangeOfTwoCommits(t *testing.T) {
@@ -343,11 +342,11 @@ func TestEachFileChangeGivenRangeOfTwoCommits(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "498214de67004b1da3d820901307bed2a68a8ef6", headSHA)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	_, _, filePaths, err := runEachFileChange(repo)
 
-	assert.Equal(t, []string{}, filePaths)
+	require.Equal(t, []string{}, filePaths)
 }
 
 func TestEachFileChangeWithRename(t *testing.T) {
@@ -355,10 +354,10 @@ func TestEachFileChangeWithRename(t *testing.T) {
 	require.NoError(t, ensureGitalyRepository(t))
 
 	repo, err := git.NewGitalyClientFromEnv(testRepo, "19e2e9b4ef76b422ce1154af39a91323ccc57434", "c347ca2e140aa667b968e51ed0ffe055501fe4f4")
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	putFiles, delFiles, _, err := runEachFileChange(repo)
 
-	assert.Contains(t, putFiles, "files/js/commit.coffee")
-	assert.Contains(t, delFiles, "files/js/commit.js.coffee")
+	require.Contains(t, putFiles, "files/js/commit.coffee")
+	require.Contains(t, delFiles, "files/js/commit.js.coffee")
 }

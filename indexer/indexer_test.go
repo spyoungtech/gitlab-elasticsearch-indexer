@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/git"
 	"gitlab.com/gitlab-org/gitlab-elasticsearch-indexer/indexer"
@@ -205,21 +205,21 @@ func TestIndex(t *testing.T) {
 
 	index(idx)
 
-	assert.Equal(t, submit.indexed, 3)
-	assert.Equal(t, submit.removed, 1)
+	require.Equal(t, submit.indexed, 3)
+	require.Equal(t, submit.removed, 1)
 
-	assert.Equal(t, parentIDString+"_"+added.Path, submit.indexedID[0])
-	assert.Equal(t, map[string]interface{}{"project_id": parentID, "blob": added, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[0])
+	require.Equal(t, parentIDString+"_"+added.Path, submit.indexedID[0])
+	require.Equal(t, map[string]interface{}{"project_id": parentID, "blob": added, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[0])
 
-	assert.Equal(t, parentIDString+"_"+modified.Path, submit.indexedID[1])
-	assert.Equal(t, map[string]interface{}{"project_id": parentID, "blob": modified, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[1])
+	require.Equal(t, parentIDString+"_"+modified.Path, submit.indexedID[1])
+	require.Equal(t, map[string]interface{}{"project_id": parentID, "blob": modified, "join_field": join_data_blob, "type": "blob"}, submit.indexedThing[1])
 
-	assert.Equal(t, parentIDString+"_"+commit.SHA, submit.indexedID[2])
-	assert.Equal(t, map[string]interface{}{"commit": commit, "join_field": join_data_commit, "type": "commit"}, submit.indexedThing[2])
+	require.Equal(t, parentIDString+"_"+commit.SHA, submit.indexedID[2])
+	require.Equal(t, map[string]interface{}{"commit": commit, "join_field": join_data_commit, "type": "commit"}, submit.indexedThing[2])
 
-	assert.Equal(t, parentIDString+"_"+removed.Path, submit.removedID[0])
+	require.Equal(t, parentIDString+"_"+removed.Path, submit.removedID[0])
 
-	assert.Equal(t, submit.flushed, 1)
+	require.Equal(t, submit.flushed, 1)
 }
 
 func TestErrorIndexingSkipsRemainder(t *testing.T) {
@@ -234,8 +234,8 @@ func TestErrorIndexingSkipsRemainder(t *testing.T) {
 
 	err := index(idx)
 
-	assert.Error(t, err)
-	assert.Equal(t, submit.indexed, 0)
-	assert.Equal(t, submit.removed, 0)
-	assert.Equal(t, submit.flushed, 0)
+	require.Error(t, err)
+	require.Equal(t, submit.indexed, 0)
+	require.Equal(t, submit.removed, 0)
+	require.Equal(t, submit.flushed, 0)
 }

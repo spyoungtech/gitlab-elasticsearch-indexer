@@ -1,5 +1,10 @@
 # GitLab Elasticsearch Indexer
 
+## v2.1.0
+
+- Fix unexpected panic in bulk AfterFunc !50
+- Configurable elastic bulk concurrency and size !56
+
 ## v2.0.0
 
 - Drop support for Elasticsearch versions 5.x !54

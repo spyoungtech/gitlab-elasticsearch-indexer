@@ -3,6 +3,7 @@ package elastic
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"log"
 	"net/http"
 	"os"
@@ -133,6 +134,7 @@ func NewClient(config *Config) (*Client, error) {
 // 2.  EC2 Instance Role Credentials
 func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.Credentials {
 	sess := session.Must(session.NewSession(aws_config))
+	ECSCredentialsURI, _ := os.LookupEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
 	creds := credentials.NewChainCredentials(
 		[]credentials.Provider{
 			&credentials.StaticProvider{
@@ -141,6 +143,7 @@ func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.
 					SecretAccessKey: config.SecretKey,
 				},
 			},
+			&endpointcreds.Provider{cfg: aws_config, endpoint: ECSCredentialsURI},
 			&ec2rolecreds.EC2RoleProvider{
 				Client: ec2metadata.New(sess),
 			},

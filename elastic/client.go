@@ -135,6 +135,7 @@ func NewClient(config *Config) (*Client, error) {
 func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.Credentials {
 	sess := session.Must(session.NewSession(aws_config))
 	ECSCredentialsURI, _ := os.LookupEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+	endpoint := fmt.Sprintf("169.254.170.2%s", ECSCredentialsURI)
 	creds := credentials.NewChainCredentials(
 		[]credentials.Provider{
 			&credentials.StaticProvider{
@@ -143,7 +144,7 @@ func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.
 					SecretAccessKey: config.SecretKey,
 				},
 			},
-			&endpointcreds.Provider{cfg: aws_config, endpoint: ECSCredentialsURI},
+			&endpointcreds.Provider{cfg: aws_config, endpoint: endpoint},
 			&ec2rolecreds.EC2RoleProvider{
 				Client: ec2metadata.New(sess),
 			},

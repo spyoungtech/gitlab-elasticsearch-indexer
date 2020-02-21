@@ -3,6 +3,7 @@ package elastic
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"log"
 	"net/http"
@@ -11,9 +12,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/deoxxa/aws_signing_client"
 	"github.com/olivere/elastic"
@@ -133,21 +131,10 @@ func NewClient(config *Config) (*Client, error) {
 // 1.  Static Credentials - As configured in Indexer config
 // 2.  EC2 Instance Role Credentials
 func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.Credentials {
-	sess := session.Must(session.NewSession(aws_config))
-	creds := credentials.NewChainCredentials(
-		[]credentials.Provider{
-			&credentials.StaticProvider{
-				Value: credentials.Value{
-					AccessKeyID:     config.AccessKey,
-					SecretAccessKey: config.SecretKey,
-				},
-			},
-			defaults.RemoteCredProvider(*aws_config, defaults.Handlers()),
-			&ec2rolecreds.EC2RoleProvider{
-				Client: ec2metadata.New(sess),
-			},
-		},
-	)
+	ECSCredentialsURI, _ := os.LookupEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+	endpoint := fmt.Sprintf("169.254.170.2%s", ECSCredentialsURI)
+	creds := credentials.NewCredentials(
+		endpointcreds.NewProviderClient(*aws_config, defaults.Handlers(), endpoint))
 	return creds
 }
 

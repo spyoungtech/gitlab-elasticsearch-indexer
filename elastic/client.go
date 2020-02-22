@@ -3,8 +3,6 @@ package elastic
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/client"
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"log"
@@ -135,14 +133,7 @@ func NewClient(config *Config) (*Client, error) {
 func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.Credentials {
 	ECSCredentialsURI, _ := os.LookupEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
 	endpoint := fmt.Sprintf("169.254.170.2%s", ECSCredentialsURI)
-	creds := credentials.NewCredentials(
-		&endpointcreds.Provider{
-			Expiry:             credentials.Expiry{},
-			Client:             client.New(*aws_config, metadata.ClientInfo{
-ServiceName: "CredentialsEndpoint", Endpoint: endpoint}, defaults.Handlers()),
-			ExpiryWindow:       0,
-			AuthorizationToken: "",
-		})
+	creds := endpointcreds.NewCredentialsClient(aws.Config{}, defaults.Handlers(), endpoint)
 	return creds
 }
 

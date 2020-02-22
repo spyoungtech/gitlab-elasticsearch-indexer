@@ -144,9 +144,6 @@ ServiceName: "CredentialsEndpoint", Endpoint: endpoint}, defaults.Handlers()),
 			AuthorizationToken: "",
 		})
 	return creds
-
-	creds := defaults.CredChain(aws_config, defaults.Handlers())
-	return creds
 }
 
 func (c *Client) ParentID() int64 {

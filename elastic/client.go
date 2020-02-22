@@ -3,6 +3,9 @@ package elastic
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/client/metadata"
+	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws/defaults"
 	"log"
 	"net/http"
@@ -130,11 +133,18 @@ func NewClient(config *Config) (*Client, error) {
 // 1.  Static Credentials - As configured in Indexer config
 // 2.  EC2 Instance Role Credentials
 func ResolveAWSCredentials(config *Config, aws_config *aws.Config) *credentials.Credentials {
-	//ECSCredentialsURI, _ := os.LookupEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
-	//	//endpoint := fmt.Sprintf("169.254.170.2%s", ECSCredentialsURI)
-	//	//creds := credentials.NewCredentials(
-	//	//	endpointcreds.NewProviderClient(*aws_config, defaults.Handlers(), endpoint))
-	//	//return creds
+	ECSCredentialsURI, _ := os.LookupEnv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI")
+	endpoint := fmt.Sprintf("169.254.170.2%s", ECSCredentialsURI)
+	creds := credentials.NewCredentials(
+		&endpointcreds.Provider{
+			Expiry:             credentials.Expiry{},
+			Client:             client.New(*aws_config, metadata.ClientInfo{
+ServiceName: "CredentialsEndpoint", Endpoint: endpoint}, defaults.Handlers()),
+			ExpiryWindow:       0,
+			AuthorizationToken: "",
+		})
+	return creds
+
 	creds := defaults.CredChain(aws_config, defaults.Handlers())
 	return creds
 }
